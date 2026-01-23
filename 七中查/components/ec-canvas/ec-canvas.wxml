@@ -1,0 +1,5 @@
+<!-- 折线图区域（每科成绩） -->
+<view class="chart-box">
+  <view class="chart-title">单科成绩趋势</view>
+  <ec-canvas id="subjectChart" canvas-id="subjectChart" ec="{{ ec }}"></ec-canvas>
+</view>

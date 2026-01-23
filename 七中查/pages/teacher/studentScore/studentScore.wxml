@@ -1,0 +1,28 @@
+<view class="page-container">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onNavigateBack">
+      <icon type="left" size="16" color="#fff" />
+      <text class="back-text">返回</text>
+    </view>
+    <view class="nav-title">{{studentName}}的成绩</view>
+  </view>
+
+  <!-- 成绩折线图 -->
+  <view class="chart-box">
+    <canvas canvas-id="studentScoreChart" width="700" height="400"></canvas>
+  </view>
+
+  <!-- 成绩列表 -->
+  <view class="score-list">
+    <view class="list-header">
+      <view class="list-col">科目</view>
+      <view class="list-col">分数</view>
+      <view class="list-col">考试日期</view>
+    </view>
+    <view class="list-item" wx:for="{{scoreList}}" wx:key="index">
+      <view class="list-col">{{item.subject}}</view>
+      <view class="list-col">{{item.score}}分</view>
+      <view class="list-col">{{item.examDate}}</view>
+    </view>
+  </view>
+</view>

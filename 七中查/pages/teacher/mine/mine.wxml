@@ -1,0 +1,48 @@
+<view class="student-container">
+  <!-- 学生信息卡片 -->
+  <view class="user-card">
+    <view class="avatar">
+      <icon type="user" size="60rpx" color="#2f54eb" />
+    </view>
+    <view class="user-info">
+      <view class="username">{{userInfo.username || '未登录'}}</view>
+      <view class="id-card">身份证号：{{formatIdCard(userInfo.id_card) || '未绑定'}}</view>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="func-list">
+    <!-- 成绩查询 -->
+    <view class="func-item" catchtap="gotoScorePage">
+      <view class="func-left">
+        <view class="func-icon">📊</view>
+        <view class="func-name">我的成绩</view>
+      </view>
+      <view class="func-right">
+        <icon type="arrowright" size="30rpx" color="#ccc" />
+      </view>
+    </view>
+
+    <!-- 修改密码：绑定showPwdDialog方法（原生弹窗） -->
+    <view class="func-item" catchtap="showPwdDialog">
+      <view class="func-left">
+        <view class="func-icon">🔒</view>
+        <view class="func-name">修改密码</view>
+      </view>
+      <view class="func-right">
+        <icon type="arrowright" size="30rpx" color="#ccc" />
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="func-item" catchtap="handleLogout">
+      <view class="func-left">
+        <view class="func-icon" style="color: #f5222d;">🚪</view>
+        <view class="func-name" style="color: #f5222d;">退出登录</view>
+      </view>
+      <view class="func-right">
+        <icon type="arrowright" size="30rpx" color="#ccc" />
+      </view>
+    </view>
+  </view>
+</view>

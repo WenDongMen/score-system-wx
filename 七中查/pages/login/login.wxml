@@ -1,0 +1,119 @@
+<!-- pages/login/login.wxml -->
+<view class="login-page">
+  <!-- 背景装饰：增强层次感（不干扰核心功能） -->
+  <view class="bg-decor decor-1"></view>
+  <view class="bg-decor decor-2"></view>
+
+  <!-- 登录主卡片：悬浮效果+圆角 -->
+  <view class="login-card">
+    <!-- 顶部标题区：图标+文字组合 -->
+    <view class="login-header">
+      <view class="header-icon-container">
+        <!-- 登录主图标（带加载失败兜底） -->
+        <image 
+          class="header-icon" 
+          src="/images/login-icon.png" 
+          mode="widthFix"
+          binderror="handleImageError"
+          data-type="loginIcon"
+          wx:if="{{!imageErrors.loginIcon}}"
+        ></image>
+        <view class="icon-fallback" wx:else>
+          <text style="font-size:60rpx;color:#4361ee;">校</text>
+        </view>
+      </view>
+      <text class="header-title">学生成绩查询系统</text>
+      <text class="header-subtitle">请登录账号继续操作</text>
+    </view>
+
+    <!-- 表单输入区：带微交互 -->
+    <view class="login-form">
+      <!-- 账号输入框 -->
+      <view class="form-item">
+        <!-- 账号图标（带兜底） -->
+        <image 
+          class="item-icon" 
+          src="/images/user-icon.png" 
+          mode="widthFix"
+          binderror="handleImageError"
+          data-type="userIcon"
+          wx:if="{{!imageErrors.userIcon}}"
+        ></image>
+        <view class="item-icon-fallback" wx:else>
+          <text style="font-size:24rpx;color:#666;">用</text>
+        </view>
+        <!-- 账号输入框 -->
+        <input 
+          class="item-input" 
+          maxlength="10" 
+          bindinput="bindAccountInput" 
+          placeholder="请输入学生姓名" 
+          placeholder-class="input-placeholder"
+          value="{{account}}"
+        />
+      </view>
+
+      <!-- 密码输入框 -->
+      <view class="form-item">
+        <!-- 密码图标（带兜底） -->
+        <image 
+          class="item-icon" 
+          src="/images/pwd-icon.png" 
+          mode="widthFix"
+          binderror="handleImageError"
+          data-type="pwdIcon"
+          wx:if="{{!imageErrors.pwdIcon}}"
+        ></image>
+        <view class="item-icon-fallback" wx:else>
+          <text style="font-size:24rpx;color:#666;">密</text>
+        </view>
+        <!-- 密码输入框 -->
+        <input 
+          class="item-input" 
+          password="{{!showPwd}}" 
+          type="text" 
+          bindinput="bindPwdInput" 
+          placeholder="请输入密码" 
+          placeholder-class="input-placeholder"
+          value="{{password}}"
+        />
+        <!-- 密码显隐切换（带兜底+hover效果） -->
+        <view class="pwd-toggle-wrap" bindtap="togglePwdVisible">
+          <image 
+            class="pwd-toggle" 
+            src="{{showPwd ? '/images/eye_open.png' : '/images/eye_close.png'}}" 
+            mode="widthFix"
+            binderror="handleImageError"
+            data-type="{{showPwd ? 'eyeOpen' : 'eyeClose'}}"
+            wx:if="{{!imageErrors[showPwd ? 'eyeClose' : 'eyeOpen']}}"
+          ></image>
+          <view class="pwd-toggle-fallback" wx:else>
+            <text style="font-size:24rpx;color:#666;">{{showPwd ? '隐' : '显'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 错误提示：红色警告+图标 -->
+      <view class="error-message" wx:if="{{errorMsg}}">
+        <text class="error-icon">⚠️</text>
+        <text class="error-text">{{errorMsg}}</text>
+      </view>
+
+      <!-- 忘记密码：右对齐+hover变色 -->
+      <view class="forgot-pwd" bindtap="goToForgot">
+        <text>忘记密码？</text>
+      </view>
+    </view>
+
+    <!-- 登录按钮：渐变+加载状态+禁用态 -->
+    <button 
+      class="login-btn" 
+      bindtap="handleLogin"
+      loading="{{isLoading}}"
+      disabled="{{isLoading || !account || !password}}"
+      hover-class="btn-hover"
+    >
+      登录
+    </button>
+  </view>
+</view>

@@ -1,0 +1,42 @@
+<view class="detail-container">
+  <!-- 折线图区域 -->
+  <view class="chart-box">
+    <view class="chart-title">总分趋势变化</view>
+    <canvas type="2d" id="scoreChart" class="score-chart" />
+  </view>
+
+  <!-- 排名与进退步区域 -->
+  <view class="rank-card">
+    <view class="rank-item">
+      <view class="item-label">总分</view>
+      <view class="item-value">{{ currentExam.totalScore }}</view>
+    </view>
+    <view class="rank-item">
+      <view class="item-label">级部排名</view>
+      <view class="item-value">{{ currentExam.gradeRank }}</view>
+    </view>
+    <view class="rank-item">
+      <view class="item-label">班级排名</view>
+      <view class="item-value">{{ currentExam.classRank }}</view>
+    </view>
+    <view class="rank-item">
+      <view class="item-label">排名变化</view>
+      <view class="item-value {{ currentExam.rankChangeType === 'up' ? 'text-green' : (currentExam.rankChangeType === 'down' ? 'text-red' : 'text-gray') }}">
+        {{ currentExam.rankChangeDesc }}
+      </view>
+    </view>
+  </view>
+
+  <!-- 单科成绩区域 -->
+  <view class="subject-title">各科成绩</view>
+  <view class="subject-item" wx:for="{{ currentExam.subjects }}" wx:key="subject">
+    <view class="subject-left">
+      <view class="subject-name">{{ item.subject }}</view>
+      <view class="exam-date">考试日期：{{ item.examDate }}</view>
+    </view>
+    <view class="subject-right">
+      <view class="score">{{ item.score }} 分</view>
+      <view class="top-ten-tag" wx:if="{{ item.isGradeTopTen }}">级部前十</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+<!--pages/teacher/gl/gl.wxml-->
+<!-- 底部自定义tabBar（教师/管理员通用） -->
+<view class="tab-bar">
+  <view class="tab-item {{activeTab === 'query' ? 'active' : ''}}" bindtap="goToQuery">
+    <text class="icon">🔍</text>
+    <text class="text">查询</text>
+  </view>
+  <view class="tab-item {{activeTab === 'manage' ? 'active' : ''}}" bindtap="goToManage">
+    <text class="icon">📋</text>
+    <text class="text">管理</text>
+  </view>
+  <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="goToMine">
+    <text class="icon">👤</text>
+    <text class="text">我的</text>
+  </view>
+</view>

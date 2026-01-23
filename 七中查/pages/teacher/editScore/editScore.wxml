@@ -1,0 +1,60 @@
+<view class="page-container">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onNavigateBack">
+      <icon type="left" size="16" color="#fff" />
+      <text class="back-text">返回</text>
+    </view>
+    <view class="nav-title">修改学生成绩</view>
+  </view>
+
+  <form class="form-container" bindsubmit="handleSubmit">
+    <view class="form-item">
+      <view class="item-label">
+        学生姓名 <text class="required">*</text>
+      </view>
+      <view class="form-input disabled-input">{{studentName}}</view>
+    </view>
+
+    <view class="form-item">
+      <view class="item-label">
+        科目 <text class="required">*</text>
+      </view>
+      <picker value="{{subjectIndex}}" range="{{subjects}}" bindchange="onSubjectChange">
+        <view class="picker-view">{{subjects[subjectIndex]}}</view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <view class="item-label">
+        分数 <text class="required">*</text>
+      </view>
+      <input 
+        class="form-input" 
+        type="number" 
+        name="score"
+        value="{{form.score}}"
+        bindinput="handleInput"
+        placeholder="0-100分"
+        min="0"
+        max="100"
+      />
+      <view class="error-tip">{{errors.score}}</view>
+    </view>
+
+    <view class="form-item">
+      <view class="item-label">考试日期</view>
+      <picker mode="date" value="{{form.examDate}}" bindchange="onDateChange">
+        <view class="picker-view">{{form.examDate}}</view>
+      </picker>
+    </view>
+
+    <button 
+      class="submit-btn" 
+      form-type="submit"
+      disabled="{{isSubmitting}}"
+      loading="{{isSubmitting}}"
+    >
+      {{isSubmitting ? '保存中...' : '保存成绩'}}
+    </button>
+  </form>
+</view>

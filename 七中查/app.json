@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/student/student",
+    "pages/student/mine/mine",
+    "pages/student/scoreDetail/scoreDetail",
+    "pages/teacher/teacher",
+    "pages/teacher/addstudent/addStudent",
+    "pages/teacher/addScore/addScore",
+    "pages/teacher/editStudent/editStudent",
+    "pages/teacher/editScore/editScore",
+    "pages/teacher/gl/gl",
+    "pages/teacher/mine/mine",
+    "pages/teacher/studentScore/addScore",
+    "pages/admin/admin",
+    "pages/admin/mine/mine"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#2f54eb",
+    "navigationBarTitleText": "",
+    "navigationBarTextStyle": "white",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "#666",
+    "selectedColor": "#2f54eb",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "height": "80rpx",
+    "fontSize": "24rpx",
+    "iconSize": "40rpx",
+    "list": [
+      {
+        "pagePath": "pages/student/student",
+        "text": "成绩查询",
+        "iconPath": "images/score.png",
+        "selectedIconPath": "images/score.png"
+      },
+      {
+        "pagePath": "pages/student/mine/mine",
+        "text": "我的",
+        "iconPath": "images/user-icon.png",
+        "selectedIconPath": "images/user-icon.png"
+      }
+    ]
+  },
+  "globalConfig": {
+    "BASE_URL": "http://192.168.101.114"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

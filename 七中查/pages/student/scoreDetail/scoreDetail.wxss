@@ -1,0 +1,108 @@
+.detail-container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+/* 折线图样式 */
+.chart-box {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.chart-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+.score-chart {
+  width: 100%;
+  height: 300rpx;
+}
+/* 排名卡片样式 */
+.rank-card {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 25rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+.rank-item {
+  text-align: center;
+  flex: 1;
+  min-width: 120rpx;
+  padding: 10rpx 0;
+}
+.item-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+.item-value {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+}
+/* 文字颜色 */
+.text-green {
+  color: #00b42a;
+}
+.text-red {
+  color: #f56c6c;
+}
+.text-gray {
+  color: #999;
+}
+/* 单科成绩样式 */
+.subject-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+.subject-item {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 10rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2rpx 5rpx rgba(0, 0, 0, 0.03);
+}
+.subject-left {
+  flex: 2;
+}
+.subject-right {
+  flex: 1;
+  text-align: right;
+}
+.subject-name {
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+.exam-date {
+  font-size: 24rpx;
+  color: #999;
+}
+.score {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2f54eb;
+  margin-bottom: 8rpx;
+}
+.top-ten-tag {
+  font-size: 22rpx;
+  color: white;
+  background-color: #ff7d00;
+  border-radius: 4rpx;
+  padding: 2rpx 8rpx;
+}

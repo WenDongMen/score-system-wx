@@ -1,0 +1,118 @@
+.admin-container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.form-box {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 25rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.form-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.input-item {
+  height: 80rpx;
+  line-height: 80rpx;
+  border: 1rpx solid #eee;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+}
+
+.btn {
+  background-color: #2f54eb;
+  color: white;
+  border-radius: 8rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 30rpx;
+}
+
+.list-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.teacher-item {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 10rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2rpx 5rpx rgba(0, 0, 0, 0.03);
+}
+
+.teacher-info {
+  flex: 3;
+}
+
+.teacher-info text {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.teacher-info text:last-child {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 0;
+}
+
+.delete-btn {
+  background-color: #f56c6c;
+  color: white;
+  border-radius: 8rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+}
+tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background-color: #fff;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 999;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+}
+
+.tab-item.active {
+  color: #1677ff;
+}
+
+.tab-item .icon {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.tab-item .text {
+  font-size: 12px;
+}

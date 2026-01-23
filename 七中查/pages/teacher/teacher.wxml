@@ -1,0 +1,91 @@
+<view class="container">
+  <!-- 【查询页核心内容】 -->
+  <view class="query-content" wx:if="{{currentTab === 0}}">
+    <!-- 搜索框 -->
+    <view class="search-box">
+      <input 
+        class="search-input" 
+        placeholder="输入学生姓名/学号搜索" 
+        value="{{searchKey}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+        bindconfirm="searchStudent"
+      />
+      <button class="search-btn" bindtap="searchStudent">搜索</button>
+    </view>
+
+    <!-- 学生搜索结果 -->
+    <view class="student-list" wx:if="{{searchResult.length > 0}}">
+      <view class="list-title">搜索结果</view>
+      <view class="student-item" wx:for="{{searchResult}}" wx:key="id" bindtap="showStudentScore" data-id="{{item.id}}">
+        <text>{{item.name}}</text>
+        <text class="student-no">学号：{{item.no}}</text>
+      </view>
+    </view>
+
+    <!-- 8个科目成绩统计（无搜索时展示） -->
+    <view class="score-container" wx:if="{{!searchKey || searchResult.length === 0}}">
+      <view class="container-title">班级成绩统计</view>
+      <view class="score-table">
+        <view class="table-header">
+          <view class="table-col">科目</view>
+          <view class="table-col">班级平均分</view>
+          <view class="table-col">班级最高分</view>
+        </view>
+        <!-- 8个科目 -->
+        <view class="table-row" wx:for="{{subjectList}}" wx:key="index">
+          <view class="table-col">{{item.name}}</view>
+          <view class="table-col">{{item.avgScore}}</view>
+          <view class="table-col">{{item.maxScore}}</view>
+        </view>
+      </view>
+
+      <!-- 成绩折线图 -->
+      <view class="chart-box">
+        <view class="chart-title">班级成绩趋势</view>
+        <canvas canvas-id="scoreChart" width="700" height="400"></canvas>
+      </view>
+    </view>
+  </view>
+
+  <!-- 【管理页内容】 -->
+  <view class="manage-content" wx:if="{{currentTab === 1}}">
+    <view class="btn-group">
+      <button class="func-btn" bindtap="goToAddStudent">添加学生</button>
+      <button class="func-btn" bindtap="goToAddScore">添加成绩</button>
+    </view>
+
+    <!-- 学生列表 -->
+    <view class="list-title">学生列表</view>
+    <view class="student-list">
+      <view class="list-header">
+        <view class="list-col">姓名</view>
+        <view class="list-col">身份证号</view>
+        <view class="list-col">操作</view>
+      </view>
+      <view class="list-item" wx:for="{{studentList}}" wx:key="id">
+        <view class="list-col">{{item.name}}</view>
+        <view class="list-col">{{item.idCard}}</view>
+        <view class="list-col">
+          <button size="mini" bindtap="goToEditStudent" data-id="{{item.id}}">修改</button>
+          <button size="mini" bindtap="goToEditScore" data-id="{{item.id}}" style="margin-left:5px;">改成绩</button>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- 底部自定义tabBar（教师/管理员通用） -->
+<view class="tab-bar">
+  <view class="tab-item {{activeTab === 'query' ? 'active' : ''}}" bindtap="goToQuery">
+    <text class="icon">🔍</text>
+    <text class="text">查询</text>
+  </view>
+  <view class="tab-item {{activeTab === 'manage' ? 'active' : ''}}" bindtap="goToManage">
+    <text class="icon">📋</text>
+    <text class="text">管理</text>
+  </view>
+  <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="goToMine">
+    <text class="icon">👤</text>
+    <text class="text">我的</text>
+  </view>
+</view>
+</view>

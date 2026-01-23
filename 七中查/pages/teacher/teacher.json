@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/teacher/teacher",
+    "pages/teacher/gl/gl",
+    "pages/teacher/mine/mine"
+  ],
+  "tabBar": {
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "color": "#666666",
+    "selectedColor": "#1677ff",
+    "list": [
+      {
+        "pagePath": "pages/teacher/teacher",
+        "text": "🔍 查询", 
+        "iconPath": "images/empty.png", 
+        "selectedIconPath": "images/empty.png"
+      },
+      {
+        "pagePath": "pages/teacher/gl/gl",
+        "text": "📋 管理",
+        "iconPath": "images/empty.png",
+        "selectedIconPath": "images/empty.png"
+      },
+      {
+        "pagePath": "pages/teacher/mine/mine",
+        "text": "👤 我的",
+        "iconPath": "images/empty.png",
+        "selectedIconPath": "images/empty.png"
+      }
+    ]
+  }
+}

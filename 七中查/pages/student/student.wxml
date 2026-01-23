@@ -1,0 +1,51 @@
+﻿<view class="student-container">
+  <!-- 学生信息卡片 -->
+  <view class="user-card">
+    <view class="avatar">
+      <icon type="user" size="60rpx" color="#2f54eb" />
+    </view>
+    <view class="user-info">
+      <view class="username">{{ userInfo.username || '加载中...' }}</view>
+      <view class="id-card">身份证号：{{ formatIdCard(userInfo.id_card) || '未绑定' }}</view>
+    </view>
+  </view>
+
+  <!-- 错误提示状态 -->
+  <view class="error" wx:if="{{ errorMsg }}">
+    <view class="error-icon">⚠️</view>
+    <view class="error-text">{{ errorMsg }}</view>
+    <button class="retry-btn" bindtap="reloadScores">重新加载</button>
+  </view>
+
+  <!-- 无成绩状态 -->
+  <view class="empty" wx:if="{{ !errorMsg && examList.length === 0 }}">
+    <view class="empty-icon">📄</view>
+    <view class="empty-text">暂无成绩数据</view>
+    <view class="empty-subtext">请等待教师添加成绩</view>
+  </view>
+
+  <!-- 按考试日期分组的成绩列表 -->
+  <view wx:if="{{ !errorMsg && examList.length > 0 }}">
+    <view class="exam-item" wx:for="{{ examList }}" wx:key="examDate">
+      <!-- 考试日期头部 -->
+      <view class="exam-header">
+        <view class="exam-date-text">{{ item.examDate }}</view>
+        <view class="exam-summary">
+          <view class="summary-item">
+            <text class="label">总分：</text>
+            <text class="value">{{ item.totalScore }}</text>
+          </view>
+          <view class="summary-item">
+            <text class="label">级部排名：</text>
+            <text class="value">{{ item.gradeRank }}</text>
+          </view>
+          <view class="summary-item">
+            <text class="label">班级排名：</text>
+            <text class="value">{{ item.classRank }}</text>
+          </view>
+          <button class="view-all-btn" bindtap="goToExamDetail" data-examdate="{{ item.examDate }}">全部查看</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,66 @@
+<view class="container">
+  <!-- 页面标题区 -->
+  <view class="page-title">
+    <text class="title-text">学生信息登记</text>
+  </view>
+  
+  <!-- 内容区域：学生信息表单 -->
+  <view class="content">
+    <view class="card">
+      <!-- 表单装饰线 -->
+      <view class="card-header"></view>
+      
+      <view class="form-item">
+        <text class="label">学生姓名 <text class="required">*</text></text>
+        <input 
+          placeholder="请输入学生姓名" 
+          class="input" 
+          bindinput="onNameInput" 
+          value="{{studentName}}"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">学生学号 <text class="required">*</text></text>
+        <input 
+          placeholder="请输入学生学号（如2025001）" 
+          class="input" 
+          bindinput="onIdInput" 
+          value="{{studentId}}"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">所属班级</text>
+        <input 
+          placeholder="请输入班级（如高一1班）" 
+          class="input" 
+          bindinput="onClassInput" 
+          value="{{studentClass}}"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">联系电话</text>
+        <input 
+          placeholder="请输入家长联系电话" 
+          class="input" 
+          type="number"
+          bindinput="onPhoneInput" 
+          value="{{studentPhone}}"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      
+      <!-- 提交按钮区域 -->
+      <view class="btn-container">
+        <button class="submit-btn" bindtap="submitStudent" hover-class="submit-btn-hover">
+          <text class="btn-text">提交学生信息</text>
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

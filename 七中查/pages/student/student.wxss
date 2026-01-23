@@ -1,0 +1,140 @@
+/* 原有样式保留，新增以下样式 */
+/* 考试日期分组项 */
+.exam-item {
+  background-color: white;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 25rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.exam-header {
+  width: 100%;
+}
+.exam-date-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.exam-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20rpx;
+}
+.summary-item {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+}
+.summary-item .label {
+  color: #666;
+  margin-right: 8rpx;
+}
+.summary-item .value {
+  color: #2f54eb;
+  font-weight: bold;
+}
+.view-all-btn {
+  background-color: #2f54eb;
+  color: white;
+  border-radius: 60rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  border: none;
+  margin-left: auto;
+}
+
+/* 原有样式 */
+.student-container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding-bottom: 100rpx;
+  box-sizing: border-box;
+}
+.user-card {
+  background-color: white;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  background-color: #e8f3ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content:center;
+  margin-right: 30rpx;
+}
+.user-info {
+  flex: 1;
+}
+.username {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+.id-card {
+  font-size: 26rpx;
+  color: #666;
+  word-break: break-all;
+}
+.error {
+  padding: 150rpx 20rpx;
+  text-align: center;
+}
+.error-icon {
+  font-size: 80rpx;
+  color: #f56c6c;
+  margin-bottom: 30rpx;
+}
+.error-text {
+  color: #f56c6c;
+  font-size: 30rpx;
+  margin-bottom: 30rpx;
+  line-height: 45rpx;
+  padding: 0 40rpx;
+}
+.retry-btn {
+  font-size: 28rpx;
+  color: #2f54eb;
+  background-color: transparent;
+  border: 2rpx solid #2f54eb;
+  border-radius: 60rpx;
+  padding: 15rpx 40rpx;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+.retry-btn:hover {
+  background-color: #2f54eb;
+  color: white;
+}
+.empty {
+  padding: 180rpx 20rpx 150rpx;
+  text-align: center;
+}
+.empty-icon {
+  font-size: 120rpx;
+  color: #ccc;
+  margin-bottom: 40rpx;
+}
+.empty-text {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 15rpx;
+}
+.empty-subtext {
+  font-size: 26rpx;
+  color: #999;
+  max-width: 400rpx;
+  margin: 0 auto;
+  line-height: 36rpx;
+}

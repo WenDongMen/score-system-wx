@@ -1,0 +1,67 @@
+<view class="page-container">
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onNavigateBack">
+      <icon type="left" size="16" color="#fff" />
+    </view>
+    <view class="nav-title">成绩管理系统</view>
+    <view class="nav-right"></view>
+  </view>
+
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-title">添加学生</view>
+  </view>
+
+  <!-- 表单区域 -->
+  <form class="form-container" bindsubmit="handleSubmit">
+    <!-- 学生姓名项 -->
+    <view class="form-item">
+      <view class="item-label">
+        学生姓名 <text class="required">*</text>
+      </view>
+      <input 
+        class="form-input {{errors.username ? 'input-error' : ''}}" 
+        name="username"
+        placeholder="请输入学生姓名" 
+        value="{{form.username}}"
+        bindinput="handleInput"
+        maxlength="20"
+      />
+      <view class="error-tip">{{errors.username}}</view>
+    </view>
+
+    <!-- 身份证号项 -->
+    <view class="form-item">
+      <view class="item-label">
+        身份证号 <text class="required">*</text>
+      </view>
+      <input 
+        class="form-input {{errors.idCard ? 'input-error' : ''}}" 
+        name="idCard"
+        placeholder="请输入18位身份证号" 
+        type="idcard"
+        value="{{form.idCard}}"
+        bindinput="handleInput"
+        maxlength="18"
+      />
+      <view class="error-tip">{{errors.idCard}}</view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <button 
+      class="submit-btn" 
+      form-type="submit"
+      disabled="{{isSubmitting}}"
+      loading="{{isSubmitting}}"
+    >
+      {{isSubmitting ? '提交中...' : '添加学生'}}
+    </button>
+
+    <!-- 提示信息 -->
+    <view class="tips-card">
+      <icon type="info-circle" size="14" color="#666" class="tips-icon" />
+      <text class="tips-text">学生初始密码为身份证后6位，添加后请告知学生</text>
+    </view>
+  </form>
+</view>

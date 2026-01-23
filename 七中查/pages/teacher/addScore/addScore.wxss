@@ -1,0 +1,139 @@
+/* 全局样式引入 */
+@import "/app.wxss";
+
+.container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+/* 页面标题样式 */
+.page-title {
+  padding: 30rpx 0;
+  text-align: center;
+}
+
+.title-text {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+  position: relative;
+  padding: 0 20rpx;
+}
+
+.title-text::after {
+  content: '';
+  position: absolute;
+  bottom: -10rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 6rpx;
+  background-color: var(--primary-color);
+  border-radius: 3rpx;
+}
+
+/* 内容区域 */
+.content {
+  padding: 10rpx 20rpx;
+}
+
+/* 卡片容器 */
+.card {
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* 卡片头部装饰线 */
+.card-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 8rpx;
+  background: linear-gradient(90deg, var(--primary-color), #7b61ff);
+  border-top-left-radius: 16rpx;
+  border-top-right-radius: 16rpx;
+}
+
+/* 表单项样式 */
+.form-item {
+  margin-bottom: 36rpx;
+  position: relative;
+}
+
+.form-item:last-of-type {
+  margin-bottom: 40rpx;
+}
+
+.label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+  padding-left: 4rpx;
+}
+
+.required {
+  color: #ff4d4f;
+  font-size: 30rpx;
+  vertical-align: middle;
+}
+
+/* 输入框样式 */
+.input {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  padding: 0 24rpx;
+  border: 1px solid #e5e6eb;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  box-sizing: border-box;
+  transition: all 0.3s;
+}
+
+.input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4rpx rgba(102, 92, 255, 0.1);
+}
+
+.input-placeholder {
+  color: #c9cdD4;
+  font-size: 28rpx;
+}
+
+/* 按钮容器 */
+.btn-container {
+  padding-top: 10rpx;
+}
+
+/* 提交按钮样式 */
+.submit-btn {
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  background-color: var(--primary-color);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 12rpx;
+  border: none;
+  transition: all 0.3s;
+  box-shadow: 0 6rpx 16rpx rgba(102, 92, 255, 0.2);
+}
+
+.submit-btn-hover {
+  background-color: #5a47e6;
+  transform: translateY(-2rpx);
+  box-shadow: 0 8rpx 20rpx rgba(102, 92, 255, 0.3);
+}
+
+.btn-text {
+  display: inline-block;
+  vertical-align: middle;
+}

@@ -1,0 +1,134 @@
+<view class="student-container">
+  <!-- 学生信息卡片（调整布局顺序与对齐） -->
+  <view class="user-card">
+    <view class="avatar-wrapper">
+      <!-- 文字图标替代头像，显示用户名首字符 -->
+      <view class="avatar-text">{{userInfo.username ? userInfo.username.charAt(0) : '学'}}</view>
+      <view class="avatar-badge">学生</view>
+    </view>
+    <view class="user-info">
+      <view class="username">{{userInfo.username || '未登录'}}</view>
+      <view class="id-card">身份证号：{{formatIdCard(userInfo.id_card) || '未绑定'}}</view>
+      <view class="class-info" wx:if="{{userInfo.class_name}}">所属班级：{{userInfo.class_name}}</view>
+    </view>
+  </view>
+
+  <!-- 功能列表（修复图标、文字、箭头的位置对齐） -->
+  <view class="func-section">
+    <view class="section-title">核心功能</view>
+    <view class="func-list">
+      <!-- 我的成绩：图标左、文字中、箭头右 -->
+      <view class="func-item" bindtap="gotoScorePage">
+        <view class="func-icon score-icon">
+          <icon type="charts" size="40rpx" color="#406eff" />
+        </view>
+        <view class="func-content">
+          <view class="func-name">我的成绩</view>
+          <view class="func-desc">查看各科成绩与排名</view>
+        </view>
+        <view class="func-arrow">
+          <icon type="arrowright" size="28rpx" color="#ccc" />
+        </view>
+      </view>
+
+      <!-- 修改密码：图标右、文字左（可根据需求调整是否保留箭头） -->
+      <view class="func-item" bindtap="showPwdDialog">
+        <view class="func-content">
+          <view class="func-name">修改密码</view>
+          <view class="func-desc">安全修改登录密码</view>
+        </view>
+        <view class="func-icon pwd-icon">
+          <icon type="safe_success" size="40rpx" color="#406eff" />
+        </view>
+        <view class="func-arrow">
+          <icon type="arrowright" size="28rpx" color="#ccc" />
+        </view>
+      </view>
+
+      <!-- 退出登录：图标左、文字中、箭头右（文字红色） -->
+      <view class="func-item logout-item" bindtap="handleLogout">
+        <view class="func-icon logout-icon">
+          <text class="icon-font">🚪</text>
+        </view>
+        <view class="func-content">
+          <view class="func-name">退出登录</view>
+          <view class="func-desc">安全退出当前账号</view>
+        </view>
+        <view class="func-arrow">
+          <icon type="arrowright" size="28rpx" color="#ccc" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 密码修改弹窗（保持原有逻辑，修复内部输入框图标位置） -->
+  <view class="dialog-mask" wx:if="{{showPwdDialog}}" bindtap="hidePwdDialog" animation="{{maskAnimation}}">
+    <view class="dialog-content" catchtap="noop" animation="{{dialogAnimation}}">
+      <view class="dialog-header">
+        <view class="dialog-title">修改密码</view>
+        <view class="dialog-close" bindtap="hidePwdDialog">×</view>
+      </view>
+      <form bindsubmit="handleChangePwd">
+        <!-- 原密码 -->
+        <view class="form-group">
+          <view class="form-label">原密码</view>
+          <view class="form-input input-with-icon">
+            <input 
+              type="{{showOldPwd ? 'text' : 'password'}}" 
+              name="oldPwd" 
+              placeholder="请输入原密码"
+              value="{{oldPwdValue}}"
+              bindinput="inputOldPwd"
+            />
+            <view class="pwd-icon" bindtap="toggleOldPwd">
+              <text>{{showOldPwd ? '🙈' : '👁️'}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 新密码 -->
+        <view class="form-group">
+          <view class="form-label">新密码</view>
+          <view class="form-input input-with-icon">
+            <input 
+              type="{{showNewPwd ? 'text' : 'password'}}" 
+              name="newPwd" 
+              placeholder="请输入6-20位新密码"
+              value="{{newPwdValue}}"
+              bindinput="checkPwdStrength"
+            />
+            <view class="pwd-icon" bindtap="toggleNewPwd">
+              <text>{{showNewPwd ? '🙈' : '👁️'}}</text>
+            </view>
+          </view>
+          <view class="pwd-strength" wx:if="{{pwdStrength.text}}">
+            密码强度：<text class="{{pwdStrength.class}}">{{pwdStrength.text}}</text>
+          </view>
+        </view>
+
+        <!-- 确认新密码 -->
+        <view class="form-group">
+          <view class="form-label">确认新密码</view>
+          <view class="form-input input-with-icon">
+            <input 
+              type="{{showConfirmPwd ? 'text' : 'password'}}" 
+              name="confirmPwd" 
+              placeholder="请再次输入新密码"
+              value="{{confirmPwdValue}}"
+              bindinput="inputConfirmPwd"
+            />
+            <view class="pwd-icon" bindtap="toggleConfirmPwd">
+              <text>{{showConfirmPwd ? '🙈' : '👁️'}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-msg" wx:if="{{pwdMsg}}">{{pwdMsg}}</view>
+        <view class="dialog-btns">
+          <button form-type="reset" class="btn-cancel" bindtap="hidePwdDialog">取消</button>
+          <button form-type="submit" class="btn-confirm" loading="{{submitting}}" disabled="{{submitting}}">确认修改</button>
+        </view>
+      </form>
+    </view>
+  </view>
+</view>

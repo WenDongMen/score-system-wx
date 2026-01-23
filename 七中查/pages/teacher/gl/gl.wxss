@@ -1,0 +1,38 @@
+/* pages/teacher/gl/gl.wxss */
+
+/* 自定义tabBar样式 */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background-color: #fff;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 999;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+}
+
+.tab-item.active {
+  color: #1677ff;
+}
+
+.tab-item .icon {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.tab-item .text {
+  font-size: 12px;
+}

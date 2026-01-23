@@ -1,0 +1,22 @@
+{
+  "tabBar": {
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "color": "#666666",
+    "selectedColor": "#1677ff",
+    "list": [
+      {
+        "pagePath": "pages/admin/admin",
+        "text": "🔍 管理", 
+        "iconPath": "images/empty.png", 
+        "selectedIconPath": "images/empty.png"
+      },
+      {
+        "pagePath": "pages/admin/mine/mine",
+        "text": "👤 我的",
+        "iconPath": "images/empty.png",
+        "selectedIconPath": "images/empty.png"
+      }
+    ]
+  }
+}

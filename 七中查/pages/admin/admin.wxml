@@ -1,0 +1,29 @@
+<view class="admin-container">
+  <!-- 新增教师表单 -->
+  <view class="form-box">
+    <view class="form-title">新增教师</view>
+    <input class="input-item" placeholder="请输入教师用户名" bindinput="onUsernameInput" />
+    <input class="input-item" placeholder="请输入教师密码" password bindinput="onPasswordInput" />
+    <button class="btn" bindtap="addTeacher">添加教师</button>
+  </view>
+
+  <!-- 教师列表 -->
+  <view class="list-title">教师列表</view>
+  <view class="teacher-item" wx:for="{{teachers}}" wx:key="id">
+    <view class="teacher-info">
+      <text>用户名：{{item.username}}</text>
+      <text>创建时间：{{item.created_at}}</text>
+    </view>
+    <button class="delete-btn" bindtap="deleteTeacher" data-id="{{item.id}}">删除</button>
+  </view>
+
+
+  <view class="tab-item {{activeTab === 'manage' ? 'active' : ''}}" bindtap="goToManage">
+    <text class="icon">📋</text>
+    <text class="text">管理</text>
+  </view>
+  <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="goToMine">
+    <text class="icon">👤</text>
+    <text class="text">我的</text>
+  </view>
+</view>

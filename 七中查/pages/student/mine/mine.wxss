@@ -1,0 +1,488 @@
+/* 全局样式重置 */
+page {
+  background-color: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* 容器样式 */
+.student-container {
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+  box-sizing: border-box;
+}
+
+/* 顶部导航栏 */
+.top-nav {
+  background: linear-gradient(135deg, #406eff 0%, #2f54eb 100%);
+  padding: 40rpx 30rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 20rpx rgba(47, 84, 235, 0.2);
+  position: relative;
+}
+
+.nav-title {
+  font-size: 36rpx;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+/* 学生信息卡片：核心修复垂直居中与间距 */
+.user-card {
+  display: flex;
+  align-items: center; /* 垂直居中，修复头像与文字错位 */
+  background: #ffffff;
+  margin: 30rpx 30rpx;
+  padding: 30rpx 30rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+  gap: 30rpx; /* 头像与文字的间距，替代margin-right */
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  /* 移除margin-right，改用gap */
+}
+
+/* 文字头像样式 */
+.avatar-text {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #f0f5ff;
+  color: #406eff;
+  font-size: 56rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4rpx solid #f0f5ff;
+  transition: all 0.2s ease;
+}
+
+.avatar-text:active {
+  transform: scale(0.95);
+  background-color: #e6f0ff;
+}
+
+.avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #406eff;
+  color: #ffffff;
+  font-size: 22rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(64, 110, 255, 0.3);
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 文字垂直居中，修复位置错位 */
+}
+
+.username {
+  font-size: 36rpx;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.id-card, .class-info {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 功能板块 */
+.func-section {
+  margin: 20rpx 30rpx;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #406eff;
+  line-height: 32rpx;
+  height: 32rpx;
+}
+
+.func-list {
+  background: #ffffff;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* 功能项：核心修复布局，确保图标、文字、箭头横向对齐 */
+.func-item {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  padding: 30rpx 25rpx;
+  border-bottom: 1rpx solid #f5f7fa;
+  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+  /* 关键：使用flex布局的space-between逻辑，修复元素位置 */
+  justify-content: flex-start;
+  gap: 20rpx; /* 图标与文字的间距 */
+}
+
+.func-item:last-child {
+  border-bottom: none;
+}
+
+.func-item:active {
+  background-color: #f8f9fa;
+}
+
+.logout-item {
+  color: #f5222d;
+}
+
+/* 功能图标：固定尺寸，修复位置偏移 */
+.func-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* 防止图标被压缩 */
+}
+
+.score-icon {
+  background-color: #e6f7ff;
+}
+
+.pwd-icon {
+  background-color: #f0f5ff;
+  /* 修复修改密码图标位置：如果需要靠右，可添加margin-left: auto; */
+  /* margin-left: auto; */
+}
+
+.logout-icon {
+  background-color: #fff1f0;
+}
+
+.icon-font {
+  font-size: 36rpx;
+  color: #f5222d;
+}
+
+/* 功能内容：占满中间区域，修复文字换行错位 */
+.func-content {
+  flex: 1; /* 占满剩余空间 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.func-name {
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.logout-item .func-name {
+  color: #f5222d;
+}
+
+.func-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.logout-item .func-desc {
+  color: #ff8080;
+}
+
+/* 功能箭头：固定位置在右侧，修复偏移 */
+.func-arrow {
+  color: #ccc;
+  width: 28rpx;
+  height: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* 防止箭头被压缩 */
+  /* 关键：箭头固定在右侧 */
+  margin-left: auto;
+}
+
+/* 弹窗遮罩 */
+.dialog-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.dialog-content {
+  width: 85%;
+  max-width: 600rpx;
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10000;
+  transform-origin: center center;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.dialog-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.dialog-close {
+  font-size: 36rpx;
+  color: #999;
+  width: 40rpx;
+  height: 40rpx;
+  text-align: center;
+  line-height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.dialog-close:active {
+  color: #f5222d;
+  transform: scale(0.9);
+}
+
+/* 表单样式：修复输入框与图标位置 */
+.form-group {
+  margin-bottom: 30rpx;
+  box-sizing: border-box;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.form-input {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-icon input {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: 1rpx solid #eee;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s ease;
+  /* 修复输入框文字与图标重叠 */
+  padding-right: 60rpx;
+}
+
+.input-with-icon input:focus {
+  border-color: #406eff;
+  box-shadow: 0 0 0 4rpx rgba(64, 110, 255, 0.1);
+}
+
+/* 密码图标：修复位置，避免与输入框文字重叠 */
+.pwd-icon {
+  position: absolute;
+  right: 20rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40rpx;
+  height: 40rpx;
+  text-align: center;
+  line-height: 40rpx;
+  z-index: 10;
+  cursor: pointer;
+  user-select: none;
+  font-size: 24rpx;
+  color: #999;
+  transition: color 0.2s ease;
+}
+
+.pwd-icon:active {
+  color: #406eff;
+}
+
+/* 密码强度提示 */
+.pwd-strength {
+  font-size: 22rpx;
+  margin-top: 10rpx;
+  height: 24rpx;
+  line-height: 24rpx;
+}
+
+.strength-weak {
+  color: #f5222d;
+}
+
+.strength-middle {
+  color: #faad14;
+}
+
+.strength-strong {
+  color: #52c41a;
+}
+
+.form-msg {
+  font-size: 24rpx;
+  color: #f5222d;
+  text-align: center;
+  margin-bottom: 20rpx;
+  min-height: 30rpx;
+  line-height: 30rpx;
+}
+
+/* 弹窗按钮 */
+.dialog-btns {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40rpx;
+  gap: 20rpx;
+  box-sizing: border-box;
+}
+
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 8rpx;
+  font-size: 30rpx;
+  border: none;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background-color: #f5f7fa;
+  color: #666;
+}
+
+.btn-cancel:active {
+  background-color: #e8e8e8;
+}
+
+.btn-confirm {
+  background-color: #406eff;
+  color: #ffffff;
+}
+
+.btn-confirm[loading], .btn-confirm[disabled] {
+  background-color: #829fff;
+  color: #ffffff;
+}
+
+.btn-confirm:active:not([disabled]) {
+  background-color: #2f54eb;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  page {
+    background-color: #1a1a1a;
+  }
+
+  .user-card, .func-list, .dialog-content {
+    background-color: #2c2c2c;
+    border: 1rpx solid #3a3a3a;
+  }
+
+  .username, .section-title, .func-name, .dialog-title, .form-label {
+    color: #f5f5f5;
+  }
+
+  .id-card, .class-info, .func-desc {
+    color: #cccccc;
+  }
+
+  .func-item {
+    border-bottom-color: #3a3a3a;
+  }
+
+  .func-item:active {
+    background-color: #333333;
+  }
+
+  .form-input input {
+    background-color: #3a3a3a;
+    border-color: #444;
+    color: #f5f5f5;
+  }
+
+  .form-input input::placeholder {
+    color: #999;
+  }
+
+  .form-input input:focus {
+    border-color: #406eff;
+    box-shadow: 0 0 0 4rpx rgba(64, 110, 255, 0.2);
+  }
+
+  .btn-cancel {
+    background-color: #3a3a3a;
+    color: #cccccc;
+  }
+
+  .btn-cancel:active {
+    background-color: #444444;
+  }
+
+  .pwd-icon {
+    color: #cccccc;
+  }
+
+  .avatar-text {
+    background-color: #3a3a3a;
+    border-color: #406eff;
+  }
+
+  .avatar-text:active {
+    background-color: #444444;
+  }
+}

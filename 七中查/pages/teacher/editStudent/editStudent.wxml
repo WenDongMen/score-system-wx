@@ -1,0 +1,51 @@
+<view class="page-container">
+  <view class="nav-bar">
+    <view class="nav-back" bindtap="onNavigateBack">
+      <icon type="left" size="16" color="#fff" />
+      <text class="back-text">返回</text>
+    </view>
+    <view class="nav-title">修改学生信息</view>
+  </view>
+
+  <form class="form-container" bindsubmit="handleSubmit">
+    <view class="form-item">
+      <view class="item-label">
+        学生姓名 <text class="required">*</text>
+      </view>
+      <input 
+        class="form-input" 
+        name="username"
+        value="{{form.username}}"
+        bindinput="handleInput"
+        maxlength="20"
+        placeholder="请输入学生姓名"
+      />
+      <view class="error-tip">{{errors.username}}</view>
+    </view>
+
+    <view class="form-item">
+      <view class="item-label">
+        身份证号 <text class="required">*</text>
+      </view>
+      <input 
+        class="form-input" 
+        name="idCard"
+        type="idcard"
+        value="{{form.idCard}}"
+        bindinput="handleInput"
+        maxlength="18"
+        placeholder="请输入18位身份证号"
+      />
+      <view class="error-tip">{{errors.idCard}}</view>
+    </view>
+
+    <button 
+      class="submit-btn" 
+      form-type="submit"
+      disabled="{{isSubmitting}}"
+      loading="{{isSubmitting}}"
+    >
+      {{isSubmitting ? '保存中...' : '保存修改'}}
+    </button>
+  </form>
+</view>
