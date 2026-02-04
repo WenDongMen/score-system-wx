@@ -9,7 +9,7 @@ const crypto = require('crypto');
 
 // 初始化Express应用
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 80;
 const ENV = process.env.ENV || 'production';
 
 // ===================== 基础配置 =====================
@@ -116,22 +116,39 @@ const initializeDatabase = async () => {
     `;
     await client.query(createScoreTable);
 
-    // 插入默认管理员账号
-    const adminUsername = 'admin001';
-    const adminPassword = 'Admin@123456';
-    const adminResult = await client.query(
-      `SELECT id FROM users WHERE username = $1 LIMIT 1`,
-      [adminUsername]
-    );
-    
-    if (adminResult.rows.length === 0) {
-      const hashedPwd = bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS);
-      await client.query(`
-        INSERT INTO users (username, password, role)
-        VALUES ($1, $2, 'admin')
-      `, [adminUsername, hashedPwd]);
-      console.log(`✅ 默认管理员账号创建成功：${adminUsername}/${adminPassword}`);
-    }
+// 插入默认管理员账号
+const adminUsername = 'admin001';
+const adminPassword = 'Admin@123456';
+const adminResult = await client.query(
+  `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+  [adminUsername]
+);
+
+if (adminResult.rows.length === 0) {
+  const hashedAdminPwd = bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS);
+  await client.query(`
+    INSERT INTO users (username, password, role)
+    VALUES ($1, $2, 'admin')
+  `, [adminUsername, hashedAdminPwd]);
+  console.log(`✅ 默认管理员账号创建成功：${adminUsername}/${adminPassword}`);
+}
+
+// 插入默认教师账号（新增这部分）
+const teacherUsername = 'teacher001'; // 注意你拼写的teacherUsearname是错的，修正为teacherUsername
+const teacherPassword = '123456';     // 建议后续改成复杂密码，比如Teacher@123456
+const teacherResult = await client.query(
+  `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+  [teacherUsername]
+);
+
+if (teacherResult.rows.length === 0) {
+  const hashedTeacherPwd = bcrypt.hashSync(teacherPassword, BCRYPT_ROUNDS); // 密码必须加密存储
+  await client.query(`
+    INSERT INTO users (username, password, role, id_card, class_name)
+    VALUES ($1, $2, 'teacher', NULL, NULL)
+  `, [teacherUsername, hashedTeacherPwd]);
+  console.log(`✅ 默认教师账号创建成功：${teacherUsername}/${teacherPassword}`);
+}
 
     console.log('✅ 数据库表结构初始化完成');
   } catch (err) {
@@ -555,6 +572,15 @@ const handleException = (apiName) => {
 };
 
 // ===================== API接口 =====================
+
+app.get('', (req, res) => {
+  res.json({
+    code:200,
+    message: '成绩管理系统后端服务启动成功！，如有问题请联系作者15684199141（微信同号）',
+    time: dayjs().format('YYYY-MM-DD HH:mm:ss')
+  });
+});
+
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({
@@ -571,7 +597,8 @@ app.route('/login')
   .get((req, res) => {
     res.json(xssEscape({
       code: 200,
-      message: '登录接口正常，请使用POST提交JSON数据'
+      message: '登录接口正常，请使用POST提交JSON数据',
+      time: dayjs().format('YYYY-MM-DD HH:mm:ss')
     }));
   })
   .post(handleException('用户登录'), async (req, res) => {
@@ -609,14 +636,16 @@ app.route('/login')
         SELECT id, username, password, role, id_card, class_name FROM users WHERE username = $1 LIMIT 1
       `, [username]);
       
+      // 1. 账号不存在的情况 - 明确提示
       if (result.rows.length === 0) {
         logAudit('用户登录', -1, username, req.ip, '账号不存在', 'WARNING');
         return res.status(401).json(xssEscape({
           code: 401,
-          message: '账号或密码错误'
+          message: '账号不存在' // 单独提示账号不存在
         }));
       }
       
+      // 2. 账号存在但密码错误的情况 - 提示账号或密码错误
       const user = result.rows[0];
       if (verifyPassword(password, user.password)) {
         const token = generateJwt(user.id, user.username, user.role);
@@ -640,7 +669,7 @@ app.route('/login')
         logAudit('用户登录', user.id, username, req.ip, '密码错误', 'WARNING');
         return res.status(401).json(xssEscape({
           code: 401,
-          message: '账号或密码错误'
+          message: '账号或密码错误' // 密码错误时的提示
         }));
       }
     } catch (err) {
@@ -818,6 +847,54 @@ app.route('/api/admin/teacher/delete/:teacherId')
     }
   });
 
+  // 更改教师密码
+app.route('/api/admin/teacher/password/:teacherId')
+  .options((req, res) => res.json({ code: 200, message: 'OK' }))
+  .put(requireAdmin, handleException('管理员更改教师密码'), async (req, res) => {
+    let client = null;
+    try {
+      const teacherId = parseInt(req.params.teacherId);
+      if (isNaN(teacherId)) {
+        return res.status(400).json(xssEscape({
+          code: 400,
+          message: '教师ID必须是数字'
+        }));
+      }
+      
+      client = await pool.connect();
+      const result = await client.query(`
+        SELECT id, username FROM users WHERE id = $1 AND role = 'teacher';
+      `, [teacherId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(400).json(xssEscape({
+          code: 400,
+          message: '教师不存在'
+        }));
+      }
+      
+      const teacher = result.rows[0];
+      await client.query(`
+        DELETE FROM users WHERE id = $1 AND role = 'teacher';
+      `, [teacherId]);
+      
+      logAudit('管理员删除教师', req.userInfo.user_id, req.userInfo.username, req.ip, 
+               `删除教师：${teacher.username}（ID：${teacherId}）`);
+      
+      res.json(xssEscape({
+        code: 200,
+        message: '教师删除成功'
+      }));
+    } catch (err) {
+      logAudit('管理员删除教师异常', req.userInfo.user_id, req.userInfo.username, req.ip, `错误：${err.message}`, 'ERROR');
+      return res.status(500).json(xssEscape({
+        code: 500,
+        message: '删除失败'
+      }));
+    } finally {
+      if (client) client.release();
+    }
+  });
 // -------------------------- 教师接口 --------------------------
 // 搜索学生
 app.route('/api/teacher/student/search')
@@ -870,6 +947,65 @@ app.route('/api/teacher/student/search')
     }
   });
 
+  // 新增：获取科目成绩统计（解决前端404的核心接口）
+app.route('/api/teacher/subject/statistics')
+  .options((req, res) => res.json({ code: 200, message: 'OK' }))
+  .get(requireRole('teacher'), handleException('教师查询科目统计'), async (req, res) => {
+    let client = null;
+    try {
+      // 可选：接收前端传的考试日期参数，无参数则查所有
+      const examDate = req.query.exam_date?.trim() || '';
+      
+      client = await pool.connect();
+      let querySql = `
+        SELECT 
+          subject,
+          AVG(score) as avg_score,       -- 平均分
+          MAX(score) as max_score,       -- 最高分
+          MIN(score) as min_score,       -- 最低分
+          COUNT(*) as student_count      -- 参考人数
+        FROM scores 
+      `;
+      const queryParams = [];
+      
+      // 如果传了考试日期，添加筛选条件
+      if (examDate) {
+        querySql += ` WHERE exam_date = $1 `;
+        queryParams.push(examDate);
+      }
+      
+      querySql += ` GROUP BY subject ORDER BY subject ASC;`;
+      
+      const result = await client.query(querySql, queryParams);
+      
+      // 格式化数据（保留1位小数）
+      const statistics = result.rows.map(item => ({
+        subject: item.subject,
+        avg_score: Math.round(Number(item.avg_score) * 10) / 10,
+        max_score: Math.round(Number(item.max_score) * 10) / 10,
+        min_score: Math.round(Number(item.min_score) * 10) / 10,
+        student_count: Number(item.student_count)
+      }));
+      
+      logAudit('教师查询科目统计', req.userInfo.user_id, req.userInfo.username, req.ip, 
+               `考试日期：${examDate || '所有'}，查询到${statistics.length}个科目统计`);
+      
+      res.json(xssEscape({
+        code: 200,
+        message: '科目统计查询成功',
+        data: statistics
+      }));
+    } catch (err) {
+      logAudit('教师查询科目统计异常', req.userInfo.user_id, req.userInfo.username, req.ip, `错误：${err.message}`, 'ERROR');
+      return res.status(500).json(xssEscape({
+        code: 500,
+        message: '查询失败'
+      }));
+    } finally {
+      if (client) client.release();
+    }
+  });
+  
 // 查询学生列表
 app.route('/api/teacher/student/list')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
@@ -1489,10 +1625,11 @@ const startServer = async () => {
     // 启动HTTP服务
     app.listen(PORT, () => {
       console.log('='.repeat(60));
-      console.log('🎯 成绩管理系统后端服务启动成功！');
-      console.log(`🔧 服务环境：${ENV}`);
-      console.log(`🌐 服务地址：http://localhost:${PORT}`);
-      console.log(`🔑 默认管理员账号：admin001/Admin@123456`);
+      console.log('成绩管理系统正在启动...')
+      console.log('成绩管理系统后端服务启动成功！');
+      console.log(`服务环境：${ENV}`);
+      console.log(`服务地址：http://localhost:${PORT}`);
+      console.log(`默认管理员账号：admin001/Admin@123456`);
       console.log('='.repeat(60));
     });
   } catch (err) {
