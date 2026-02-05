@@ -1625,7 +1625,7 @@ const startServer = async () => {
     // 启动HTTP服务
     app.listen(PORT, () => {
       console.log('='.repeat(60));
-      console.log('成绩管理系统正在启动...')
+      console.log('成绩管理系统正在启动')
       console.log('成绩管理系统后端服务启动成功！');
       console.log(`服务环境：${ENV}`);
       console.log(`服务地址：http://localhost:${PORT}`);
