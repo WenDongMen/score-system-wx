@@ -6,11 +6,20 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dayjs = require('dayjs');
 const crypto = require('crypto');
+const path = require('path'); 
 
 // 初始化Express应用
 const app = express();
 const PORT = process.env.PORT || 80;
 const ENV = process.env.ENV || 'production';
+
+// ===================== EJS模板引擎配置（核心新增） =====================
+// 设置EJS为模板引擎
+app.set('view engine', 'ejs');
+// 配置模板文件目录（views），适配项目目录结构，__dirname为当前文件所在目录
+app.set('views', path.join(__dirname, 'views'));
+// 可选：配置静态资源目录（如css、js、img），前端页面可直接引用
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ===================== 基础配置 =====================
 // 中间件配置
@@ -27,7 +36,7 @@ const DB_CONFIG = {
   password: process.env.DB_PASSWORD || '6CncyAag2G5oZO1xzD8ivWLwX7KERH2v',
   database: process.env.DB_NAME || 'score_db_dqiq',
   connectTimeoutMillis: 15000,
-  ssl: { rejectUnauthorized: false } // 必须加SSL配置（Render PostgreSQL要求）
+  ssl: { rejectUnauthorized: false } // Render PostgreSQL要求SSL
 };
 
 // JWT配置
@@ -116,39 +125,39 @@ const initializeDatabase = async () => {
     `;
     await client.query(createScoreTable);
 
-// 插入默认管理员账号
-const adminUsername = 'admin001';
-const adminPassword = 'Admin@123456';
-const adminResult = await client.query(
-  `SELECT id FROM users WHERE username = $1 LIMIT 1`,
-  [adminUsername]
-);
+    // 插入默认管理员账号
+    const adminUsername = 'admin001';
+    const adminPassword = 'Admin@123456';
+    const adminResult = await client.query(
+      `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+      [adminUsername]
+    );
 
-if (adminResult.rows.length === 0) {
-  const hashedAdminPwd = bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS);
-  await client.query(`
-    INSERT INTO users (username, password, role)
-    VALUES ($1, $2, 'admin')
-  `, [adminUsername, hashedAdminPwd]);
-  console.log(`✅ 默认管理员账号创建成功：${adminUsername}/${adminPassword}`);
-}
+    if (adminResult.rows.length === 0) {
+      const hashedAdminPwd = bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS);
+      await client.query(`
+        INSERT INTO users (username, password, role)
+        VALUES ($1, $2, 'admin')
+      `, [adminUsername, hashedAdminPwd]);
+      console.log(`✅ 默认管理员账号创建成功：${adminUsername}/${adminPassword}`);
+    }
 
-// 插入默认教师账号（新增这部分）
-const teacherUsername = 'teacher001'; // 注意你拼写的teacherUsearname是错的，修正为teacherUsername
-const teacherPassword = '123456';     // 建议后续改成复杂密码，比如Teacher@123456
-const teacherResult = await client.query(
-  `SELECT id FROM users WHERE username = $1 LIMIT 1`,
-  [teacherUsername]
-);
+    // 插入默认教师账号
+    const teacherUsername = 'teacher001';
+    const teacherPassword = '123456';
+    const teacherResult = await client.query(
+      `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+      [teacherUsername]
+    );
 
-if (teacherResult.rows.length === 0) {
-  const hashedTeacherPwd = bcrypt.hashSync(teacherPassword, BCRYPT_ROUNDS); // 密码必须加密存储
-  await client.query(`
-    INSERT INTO users (username, password, role, id_card, class_name)
-    VALUES ($1, $2, 'teacher', NULL, NULL)
-  `, [teacherUsername, hashedTeacherPwd]);
-  console.log(`✅ 默认教师账号创建成功：${teacherUsername}/${teacherPassword}`);
-}
+    if (teacherResult.rows.length === 0) {
+      const hashedTeacherPwd = bcrypt.hashSync(teacherPassword, BCRYPT_ROUNDS);
+      await client.query(`
+        INSERT INTO users (username, password, role, id_card, class_name)
+        VALUES ($1, $2, 'teacher', NULL, NULL)
+      `, [teacherUsername, hashedTeacherPwd]);
+      console.log(`✅ 默认教师账号创建成功：${teacherUsername}/${teacherPassword}`);
+    }
 
     console.log('✅ 数据库表结构初始化完成');
   } catch (err) {
@@ -572,14 +581,51 @@ const handleException = (apiName) => {
 };
 
 // ===================== API接口 =====================
+// 新增：EJS页面渲染根路由（核心整合点）
+app.get('/', async (req, res) => {
+  try {
+    const healthStatus = '正常运行';
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-app.get('', (req, res) => {
+    res.render('index', {
+      title: '成绩管理系统 - 首页',
+      systemName: '学生成绩管理系统',
+      healthStatus,
+      env: ENV,
+      now,
+      user: null  
+    });
+  } catch (err) {
+    res.status(500).send('页面加载失败：' + err.message);
+  }
+});
+
+
+// 原有根路径调整为/info，避免和EJS渲染路由冲突
+app.get('/info', (req, res) => {
   res.json({
     code:200,
     message: '成绩管理系统后端服务启动成功！，如有问题请联系作者15684199141（微信同号）',
     time: dayjs().format('YYYY-MM-DD HH:mm:ss')
   });
 });
+
+app.get('/test', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: '服务运行正常',
+    time: new Date().toLocaleString()
+  });
+});
+
+app.get('/api/me', (req, res) => {
+  // 现在先写死，假装没登录
+  res.json({
+    loggedIn: false,
+    user: null
+  });
+});
+
 
 // 健康检查
 app.get('/api/health', (req, res) => {
@@ -641,7 +687,7 @@ app.route('/login')
         logAudit('用户登录', -1, username, req.ip, '账号不存在', 'WARNING');
         return res.status(401).json(xssEscape({
           code: 401,
-          message: '账号不存在' // 单独提示账号不存在
+          message: '账号不存在'
         }));
       }
       
@@ -669,7 +715,7 @@ app.route('/login')
         logAudit('用户登录', user.id, username, req.ip, '密码错误', 'WARNING');
         return res.status(401).json(xssEscape({
           code: 401,
-          message: '账号或密码错误' // 密码错误时的提示
+          message: '账号或密码错误'
         }));
       }
     } catch (err) {
@@ -847,20 +893,35 @@ app.route('/api/admin/teacher/delete/:teacherId')
     }
   });
 
-  // 更改教师密码
+// 修复：更改教师密码（原代码误写为删除教师，已修正核心逻辑）
 app.route('/api/admin/teacher/password/:teacherId')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .put(requireAdmin, handleException('管理员更改教师密码'), async (req, res) => {
     let client = null;
     try {
       const teacherId = parseInt(req.params.teacherId);
+      const { new_password } = req.body;
+      
+      // 验证ID和新密码
       if (isNaN(teacherId)) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '教师ID必须是数字'
         }));
       }
+      if (!new_password) {
+        return res.status(400).json(xssEscape({
+          code: 400,
+          message: '新密码不能为空'
+        }));
+      }
+      // 密码强度校验
+      const { valid, message } = validatePasswordStrength(new_password);
+      if (!valid) {
+        return res.status(400).json(xssEscape({ code: 400, message }));
+      }
       
+      // 检查教师是否存在
       client = await pool.connect();
       const result = await client.query(`
         SELECT id, username FROM users WHERE id = $1 AND role = 'teacher';
@@ -873,28 +934,31 @@ app.route('/api/admin/teacher/password/:teacherId')
         }));
       }
       
+      // 加密新密码并更新
       const teacher = result.rows[0];
+      const hashedNewPwd = hashPassword(new_password);
       await client.query(`
-        DELETE FROM users WHERE id = $1 AND role = 'teacher';
-      `, [teacherId]);
+        UPDATE users SET password = $1 WHERE id = $2 AND role = 'teacher';
+      `, [hashedNewPwd, teacherId]);
       
-      logAudit('管理员删除教师', req.userInfo.user_id, req.userInfo.username, req.ip, 
-               `删除教师：${teacher.username}（ID：${teacherId}）`);
+      logAudit('管理员更改教师密码', req.userInfo.user_id, req.userInfo.username, req.ip, 
+               `修改教师${teacher.username}（ID：${teacherId}）的密码`);
       
       res.json(xssEscape({
         code: 200,
-        message: '教师删除成功'
+        message: '教师密码修改成功'
       }));
     } catch (err) {
-      logAudit('管理员删除教师异常', req.userInfo.user_id, req.userInfo.username, req.ip, `错误：${err.message}`, 'ERROR');
+      logAudit('管理员更改教师密码异常', req.userInfo.user_id, req.userInfo.username, req.ip, `错误：${err.message}`, 'ERROR');
       return res.status(500).json(xssEscape({
         code: 500,
-        message: '删除失败'
+        message: '密码修改失败'
       }));
     } finally {
       if (client) client.release();
     }
   });
+
 // -------------------------- 教师接口 --------------------------
 // 搜索学生
 app.route('/api/teacher/student/search')
@@ -947,7 +1011,7 @@ app.route('/api/teacher/student/search')
     }
   });
 
-  // 新增：获取科目成绩统计（解决前端404的核心接口）
+// 科目成绩统计
 app.route('/api/teacher/subject/statistics')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .get(requireRole('teacher'), handleException('教师查询科目统计'), async (req, res) => {
@@ -1625,11 +1689,12 @@ const startServer = async () => {
     // 启动HTTP服务
     app.listen(PORT, () => {
       console.log('='.repeat(60));
-      console.log('成绩管理系统正在启动')
-      console.log('成绩管理系统后端服务启动成功！');
+      console.log('成绩管理系统正在启动');
+      console.log('成绩管理系统后端服务+EJS页面渲染启动成功！');
       console.log(`服务环境：${ENV}`);
       console.log(`服务地址：http://localhost:${PORT}`);
       console.log(`默认管理员账号：admin001/Admin@123456`);
+      console.log(`默认教师账号：teacher001/123456`);
       console.log('='.repeat(60));
     });
   } catch (err) {
