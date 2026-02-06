@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>学生成绩管理系统</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      width: 360px;
+      text-align: center;
+    }
+    .status-ok {
+      color: #52c41a;
+      font-weight: bold;
+    }
+    .status-warn {
+      color: #faad14;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>学生成绩管理系统</h2>
+    <p id="status">正在检查登录状态...</p>
+  </div>
+
+<script>
+  fetch('/api/me')
+    .then(res => res.json())
+    .then(data => {
+      const el = document.getElementById('status');
+
+      if (data.loggedIn) {
+        el.innerHTML = '登录状态：<span class="status-ok">已登录</span>';
+      } else {
+        el.innerHTML = '登录状态：<span class="status-warn">未登录</span>';
+      }
+    })
+    .catch(() => {
+      document.getElementById('status').innerText = '无法获取登录状态';
+    });
+</script>
+
+
+</body>
+</html>
