@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>教师工作台 - 学生成绩管理系统</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", sans-serif;
+      background: #f5f7fa;
+    }
+
+    .nav {
+      height: 64px;
+      background: #2f54eb;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between; /* 调整为两端对齐，放退出按钮 */
+      padding: 0 20px;
+      font-size: 20px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+      margin-bottom: 24px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap; /* 移动端换行 */
+    }
+
+    input {
+      flex: 1;
+      min-width: 200px; /* 移动端最小宽度 */
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    button {
+      padding: 10px 18px;
+      background: #2f54eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      background: #fafafa;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+      .nav {
+        font-size: 18px;
+      }
+      .card {
+        padding: 16px;
+      }
+      th, td {
+        padding: 8px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="nav">
+    <div>教师工作台</div>
+    <div class="nav-right">
+      <span id="userName">加载中...</span>
+      <span class="logout-btn" onclick="logout()">退出登录</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 查询学生 -->
+    <div class="card">
+      <div class="search-box">
+        <input id="searchInput" placeholder="输入学生姓名或学号" />
+        <button onclick="searchStudent()">搜索</button>
+      </div>
+    </div>
+
+    <!-- 班级成绩 -->
+    <div class="card">
+      <h3>班级成绩统计</h3>
+      <div id="scoreTable">
+        <table>
+          <thead>
+            <tr>
+              <th>科目</th>
+              <th>平均分</th>
+              <th>最高分</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>语文</td>
+              <td>85</td>
+              <td>98</td>
+            </tr>
+            <tr>
+              <td>数学</td>
+              <td>88</td>
+              <td>100</td>
+            </tr>
+            <tr>
+              <td>英语</td>
+              <td>82</td>
+              <td>95</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // 页面加载时校验教师角色
+    window.onload = function() {
+      // 校验角色，非教师则跳登录
+      const user = checkRole('teacher');
+      if (!user) return;
+
+      // 显示当前登录用户名
+      document.getElementById('userName').textContent = user.username;
+    };
+
+    // 搜索学生
+    function searchStudent() {
+      const keyword = document.getElementById('searchInput').value.trim();
+      if (!keyword) {
+        alert('请输入学生姓名或学号');
+        return;
+      }
+
+      // 模拟请求（实际项目替换为真实接口）
+      alert(`搜索学生：${keyword}\n实际项目中调用 GET /teacher/student?keyword=${keyword}`);
+    }
+  </script>
+</body>
+</html>
