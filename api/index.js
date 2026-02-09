@@ -13,6 +13,38 @@ const app = express();
 const PORT = process.env.PORT || 80;
 const ENV = process.env.ENV || 'production';
 
+
+function pageAuth(roles = []) {
+  return (req, res, next) => {
+    // 同时从请求头/URL参数获取token
+    const authHeader = req.headers.authorization || '';
+    const headerToken = authHeader.replace('Bearer ', '');
+    const urlToken = req.query.token || '';
+    const token = headerToken || urlToken;
+
+    if (!token) {
+      return res.redirect('/login');
+    }
+
+    try {
+      const decoded = jwt.verify(token, SECRET_KEY); 
+
+      // 角色校验
+      if (roles.length && !roles.includes(decoded.role)) {
+        return res.status(403).send('无权限访问');
+      }
+
+      // 挂载用户信息
+      req.user = decoded;
+
+      next();
+    } catch (err) {
+      return res.redirect('/login');
+    }
+  };
+}
+
+
 // ===================== EJS模板引擎配置（核心新增） =====================
 // 设置EJS为模板引擎
 app.set('view engine', 'ejs');
@@ -20,6 +52,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // 可选：配置静态资源目录（如css、js、img），前端页面可直接引用
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // ===================== 基础配置 =====================
 // 中间件配置
@@ -619,70 +652,71 @@ app.get('/test', (req, res) => {
 });
 
 app.get('/api/me', (req, res) => {
-  // 现在先写死，假装没登录
-  res.json({
-    loggedIn: false,
-    user: null
-  });
+  const auth = req.headers.authorization;
+  if (!auth) {
+    return res.json({ loggedIn: false });
+  }
+
+  try {
+    const token = auth.split(' ')[1];
+    const user = jwt.verify(token, SECRET_KEY);
+
+
+    res.json({
+      loggedIn: true,
+      user
+    });
+  } catch {
+    res.json({ loggedIn: false });
+  }
 });
 
 
-// 健康检查
-app.get('/api/health', (req, res) => {
-  res.json({
-    code: 200,
-    message: '服务正常',
-    env: ENV,
-    time: dayjs().format('YYYY-MM-DD HH:mm:ss')
-  });
-});
-
-// 登录接口
+// 登录路由（GET渲染EJS + POST接口 + 自动兼容html后缀）
 app.route('/login')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
+  // GET → 渲染EJS登录页，无任何html路径
   .get((req, res) => {
-    res.json(xssEscape({
-      code: 200,
-      message: '登录接口正常，请使用POST提交JSON数据',
-      time: dayjs().format('YYYY-MM-DD HH:mm:ss')
-    }));
+    res.render('login', {
+      title: '登录 - 学生成绩管理系统',
+      msg: ''
+    });
   })
+  // POST → 登录接口，原样保留逻辑，只修复兼容
   .post(handleException('用户登录'), async (req, res) => {
     let client = null;
     try {
       const data = req.body;
       if (!data) {
-        return res.status(415).json(xssEscape({
+        return res.status(400).json(xssEscape({
           code: 400,
           message: '请提交JSON数据（Content-Type: application/json）'
         }));
       }
-      
+
       const username = (data.username || data.account || '').trim();
       const password = (data.password || '').trim();
-      
-      // 参数验证
+
       if (!username || !/^[\u4e00-\u9fa5A-Za-z0-9_]{1,50}$/.test(username)) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '用户名仅支持中文、英文、数字、下划线'
         }));
       }
-      
+
       if (!password) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '请输入密码'
         }));
       }
-      
-      // 查询用户
+
       client = await pool.connect();
       const result = await client.query(`
         SELECT id, username, password, role, id_card, class_name FROM users WHERE username = $1 LIMIT 1
       `, [username]);
-      
-      // 1. 账号不存在的情况 - 明确提示
+
+      // 账号不存在
       if (result.rows.length === 0) {
         logAudit('用户登录', -1, username, req.ip, '账号不存在', 'WARNING');
         return res.status(401).json(xssEscape({
@@ -690,15 +724,14 @@ app.route('/login')
           message: '账号不存在'
         }));
       }
-      
-      // 2. 账号存在但密码错误的情况 - 提示账号或密码错误
+
       const user = result.rows[0];
+      // 密码正确
       if (verifyPassword(password, user.password)) {
         const token = generateJwt(user.id, user.username, user.role);
-        
-        logAudit('用户登录', user.id, user.username, req.ip, 
-                 `角色：${user.role}，登录成功`);
-        
+
+        logAudit('用户登录', user.id, user.username, req.ip, `角色：${user.role}，登录成功`);
+
         return res.json(xssEscape({
           code: 200,
           message: '登录成功',
@@ -768,6 +801,37 @@ app.route('/api/admin/teachers')
       if (client) client.release();
     }
   });
+
+app.get('/teacher', pageAuth(['teacher']), (req, res) => {
+  try {
+    // 从token中解析用户信息，传递给EJS模板
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userInfo = verifyJwt(token) || {};
+    
+    res.render('teacher', {
+      title: '教师工作台 - 学生成绩管理系统',
+      user: userInfo // 传递用户信息到模板
+    });
+  } catch (err) {
+    res.status(500).send('页面加载失败：' + err.message);
+  }
+});
+
+app.get('/admin', pageAuth(['admin']), (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    const userInfo = verifyJwt(token) || {};
+    
+    res.render('admin', {
+      title: '管理员后台 - 学生成绩管理系统',
+      user: userInfo
+    });
+  } catch (err) {
+    res.status(500).send('页面加载失败：' + err.message);
+  }
+});
+
+
 
 // 新增教师
 app.route('/api/admin/teacher/add')
