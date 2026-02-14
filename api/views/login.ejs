@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>登录 - 学生成绩管理系统</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; font-family: "Microsoft YaHei"; background: #f5f7fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .login-box { width: 400px; padding: 30px; background: #fff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+    .login-title { text-align: center; font-size: 20px; margin-bottom: 24px; color: #2f54eb; }
+    .form-item { margin-bottom: 16px; position: relative; }
+    input { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+    .password-input { padding-right: 40px; }
+    /* 显示/隐藏密码图标样式 */
+    .pwd-icon { 
+      position: absolute; 
+      right: 12px; 
+      top: 50%; 
+      transform: translateY(-50%); 
+      cursor: pointer; 
+      width: 20px;
+      height: 20px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .pwd-icon:hover { opacity: 1; }
+    button { width: 100%; padding: 12px; background: #2f54eb; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    .msg { height: 20px; line-height: 20px; text-align: center; margin-bottom: 16px; color: red; font-size: 14px; }
+    /* 登录成功提示样式 */
+    .success-msg { color: #52c41a !important; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="login-title">学生成绩管理系统</div>
+    <div id="msg" class="msg"></div>
+    <div class="form-item">
+      <input type="text" id="username" placeholder="请输入用户名" autocomplete="off">
+    </div>
+    <div class="form-item">
+      <!-- 密码输入框 -->
+      <input type="password" id="password" class="password-input" placeholder="请输入密码" autocomplete="off">
+      <!-- 🌟 关键：Express静态资源路径，直接写/images/开头（public已配置为静态目录） -->
+      <img id="pwdToggleImg" class="pwd-icon" 
+           src="public/images/eye-open.png" 
+           alt="显示密码">
+    </div>
+    <button id="loginBtn" onclick="doLogin()">登录</button>
+  </div>
+
+<script>
+  // 密码显示/隐藏切换函数
+  let isPwdVisible = false;
+  const pwdInput = document.getElementById('password');
+  const pwdImg = document.getElementById('pwdToggleImg');
+
+  pwdImg.onclick = function() {
+    isPwdVisible = !isPwdVisible;
+    if (isPwdVisible) {
+      pwdInput.type = 'text';
+      pwdImg.src = '/public/images/eye-close.png';
+      pwdImg.alt = '隐藏密码';
+    } else {
+      pwdInput.type = 'password';
+      pwdImg.src = '/public/images/eye-open.png';
+      pwdImg.alt = '显示密码';
+    }
+  };
+
+  // 登录核心函数
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('loginBtn');
+
+    // 基础校验
+    if (!username) { 
+      msg.textContent = '请输入用户名'; 
+      return; 
+    }
+    if (!password) { 
+      msg.textContent = '请输入密码'; 
+      return; 
+    }
+    
+    // 登录中状态
+    btn.disabled = true;
+    btn.textContent = '登录中...';
+    msg.textContent = '验证中...';
+    msg.style.color = '#666';
+    msg.classList.remove('success-msg');
+
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.code !== 200) {
+        msg.textContent = data.message || '登录失败';
+        msg.style.color = 'red';
+        btn.disabled = false;
+        btn.textContent = '登录';
+        return;
+      }
+
+      // 登录成功提示
+      msg.textContent = '登录成功！正在跳转...';
+      msg.classList.add('success-msg');
+      
+      // 存储token和用户信息
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify(data.user));
+      
+      // 按角色跳转
+      let redirectUrl = '';
+      if (data.user.role === 'admin') {
+        redirectUrl = `/admin?token=${data.token}`;
+      } else if (data.user.role === 'teacher') {
+        redirectUrl = `/teacher?token=${data.token}`;
+      } else if (data.user.role === 'student') {
+        redirectUrl = `/student?token=${data.token}`;
+      }
+      
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 1000);
+
+    } catch (err) {
+      console.error('登录错误：', err);
+      msg.textContent = '网络错误，请重试';
+      msg.style.color = 'red';
+      btn.disabled = false;
+      btn.textContent = '登录';
+    }
+  }
+</script>
+</body>
+</html>

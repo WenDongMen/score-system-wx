@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>前后端分离测试</title>
+</head>
+<body>
+  <h1 id="info">正在加载...</h1>
+
+  <script>
+    fetch('http://localhost/test')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('info').innerText =
+          `状态：${data.status} ｜ 时间：${data.time}`;
+      })
+      .catch(err => {
+        document.getElementById('info').innerText = '请求失败';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>

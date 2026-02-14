@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>学生成绩管理系统 - 首页</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --primary: #1677ff;
+      --success: #52c41a;
+      --warning: #faad14;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text-main: #1f1f1f;
+      --text-sub: #6b7280;
+      --border: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 960px;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 36px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+      color: #2f54eb;
+    }
+
+    .header p {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-sub);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+
+    .stat-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-title {
+      font-size: 14px;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    /* 加载过渡效果 */
+    .stat-value#clock, .stat-value#loginStatus {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .stat-value#clock.loaded, .stat-value#loginStatus.loaded {
+      opacity: 1;
+    }
+
+    .ok {
+      color: var(--success);
+    }
+
+    .warn {
+      color: var(--warning);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-decoration: none;
+      transition: 0.2s;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      background: #fff;
+    }
+
+    .btn-outline:hover {
+      background: #f5f5f5;
+    }
+
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      .btn {
+        width: 100%;
+        max-width: 300px;
+        text-align: center;
+      }
+      .header h1 {
+        font-size: 24px;
+      }
+      .stat-value {
+        font-size: 20px;
+      }
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="header">
+        <h1>学生成绩管理系统</h1>
+        <p>运行环境：开发环境 ｜ 当前时间：<%= new Date().toLocaleString() %></p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-title">服务状态</div>
+          <div class="stat-value ok">正常运行</div>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-title">登录状态</div>
+          <div class="stat-value warn" id="loginStatus">
+            未登录
+          </div>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-title">系统时间</div>
+          <div class="stat-value" id="clock">--:--:--</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a href="/login" class="btn btn-primary" id="loginBtn">登录系统</a>
+        <a href="javascript:void(0)" class="btn btn-outline" onclick="checkHealth()">健康检查</a>
+        <a href="/login" class="btn btn-outline" id="adminBtn">后台管理</a>
+      </div>
+
+      <footer>
+        © <%= new Date().getFullYear() %> 学生成绩管理系统
+      </footer>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // 补零工具函数
+    const padZero = n => n.toString().padStart(2, '0');
+
+    // 更新时钟（带补零+加载效果）
+    function updateClock() {
+      const clock = document.getElementById('clock');
+      const now = new Date();
+      const timeStr = `${padZero(now.getHours())}:${padZero(now.getMinutes())}:${padZero(now.getSeconds())}`;
+      clock.textContent = timeStr;
+      clock.classList.add('loaded');
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // 健康检查（带加载状态+错误处理）
+    function checkHealth() {
+      const btn = document.querySelector('button[onclick="checkHealth()"]');
+      if (!btn) return;
+
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '检查中...';
+
+      fetch('/info')
+        .then(res => {
+          if (!res.ok) throw new Error(`服务器返回错误：${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          alert(`✅ 服务健康状态：正常\n📅 当前时间：${data.time}`);
+        })
+        .catch(err => {
+          alert(`❌ 服务健康检查失败：\n${err.message}`);
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        });
+    }
+
+    // 登录状态更新（复用auth.js逻辑，增加容错）
+    function updateLoginStatus() {
+      const token = localStorage.getItem('token');
+      const userInfo = localStorage.getItem('userInfo');
+      let user = null;
+
+      // 优先用userInfo，避免重复解析JWT
+      if (token && userInfo) {
+        try {
+          user = JSON.parse(userInfo);
+        } catch (e) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+          console.warn('解析用户信息失败：', e.message);
+        }
+      }
+
+      // 容错：DOM元素不存在则跳过
+      const loginStatus = document.getElementById('loginStatus');
+      const loginBtn = document.getElementById('loginBtn');
+      const adminBtn = document.getElementById('adminBtn');
+      
+      if (user) {
+        if (loginStatus) {
+          loginStatus.textContent = `已登录（${user.role}）`;
+          loginStatus.className = 'stat-value ok';
+          loginStatus.classList.add('loaded');
+        }
+        if (loginBtn) {
+          loginBtn.textContent = '进入工作台';
+          loginBtn.href = user.role === 'teacher' ? '/teacher' : '/admin';
+        }
+        if (adminBtn) {
+          adminBtn.href = user.role === 'teacher' ? '/teacher' : '/admin';
+          adminBtn.textContent = user.role === 'teacher' ? '教师工作台' : '管理员后台';
+        }
+      } else {
+        if (loginStatus) {
+          loginStatus.textContent = '未登录';
+          loginStatus.className = 'stat-value warn';
+          loginStatus.classList.add('loaded');
+        }
+        if (loginBtn) {
+          loginBtn.textContent = '登录系统';
+          loginBtn.href = '/login';
+        }
+        if (adminBtn) {
+          adminBtn.href = '/login';
+          adminBtn.textContent = '后台管理';
+        }
+      }
+    }
+
+    // 页面加载完成后执行
+    window.addEventListener('DOMContentLoaded', () => {
+      // 优先用auth.js的方法，没有则用本地方法
+      if (typeof updateLoginStatusUI === 'function') {
+        updateLoginStatusUI();
+      } else {
+        updateLoginStatus();
+      }
+    });
+  </script>
+</body>
+</html>
