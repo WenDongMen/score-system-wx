@@ -18,9 +18,8 @@ const ENV = process.env.ENV || 'production';
 // ===================== EJS模板引擎配置 =====================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-// 静态资源目录
+// 静态资源目录（修复重复配置）
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static('public'));
 
 // ===================== 基础配置 =====================
 app.use(cors({ origin: '*' }));
@@ -30,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // ===================== 常量配置 =====================
 const DB_CONFIG = {
   host: process.env.MYSQL_HOST || process.env.DB_HOST,
-  port: parseInt(process.env.MYSQL_PORT || process.env.DB_PORT),
+  port: parseInt(process.env.MYSQL_PORT || process.env.DB_PORT) || 3306,
   user: process.env.MYSQL_USERNAME || process.env.DB_USER,
   password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD,
   database: process.env.MYSQL_DATABASE || process.env.DB_NAME,
@@ -717,7 +716,7 @@ app.route('/login')
   });
 
 // -------------------------- 管理员接口 --------------------------
-// 添加教师
+// 修复添加教师接口的严重错误
 app.post('/api/admin/teachers', authRequired, requireAdmin, async (req, res) => {
   try {
     const { username, password, name } = req.body;
@@ -725,18 +724,21 @@ app.post('/api/admin/teachers', authRequired, requireAdmin, async (req, res) => 
       return res.json({ code: 400, msg: '用户名/密码/姓名不能为空！' });
     }
 
-    await pool.query(
-      'INSERT INTO users (username, password, role, real_name) VALUES (?, ?, ?, ?)',
-      [username, hashedPwd, 'teacher', name]
+    // 先检查用户名是否存在
+    const [userCheck] = await pool.query(
+      'SELECT id FROM users WHERE username = ? LIMIT 1',
+      [username]
     );
+    
     if (userCheck.length > 0) {
       return res.json({ code: 400, msg: '该用户名已存在！' });
     }
 
+    // 先加密密码再插入
     const hashedPwd = bcrypt.hashSync(password, 10);
     await pool.query(
-      'INSERT INTO users (username, password, role, username) VALUES (?, ?, ?, ?)',
-      [username, hashedPwd, 'teacher', name]
+      'INSERT INTO users (username, password, role, id_card, class_name) VALUES (?, ?, ?, NULL, NULL)',
+      [username, hashedPwd, 'teacher']
     );
 
     res.json({ code: 200, msg: '教师添加成功！' });
@@ -1087,7 +1089,7 @@ app.route('/api/teacher/student/list')
     }
   });
 
-// 添加学生
+// 添加学生（修复RETURNING关键字问题）
 app.route('/api/teacher/student/add')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('teacher'), handleException('教师添加学生'), async (req, res) => {
@@ -1150,15 +1152,19 @@ app.route('/api/teacher/student/add')
         }));
       }
       
-      // 添加学生
+      // 添加学生（移除MySQL不支持的RETURNING关键字）
       const initialPwd = studentIdCard.slice(-6);
       const hashedPwd = hashPassword(initialPwd);
       
-      [result] = await pool.query(`
+      await pool.query(`
         INSERT INTO users (username, password, role, id_card, class_name, bind_time)
         VALUES (?, ?, 'student', ?, ?, CURRENT_TIMESTAMP)
-        RETURNING id;
       `, [studentName, hashedPwd, studentIdCard, className]);
+      
+      // 单独查询新增学生的ID
+      [result] = await pool.query(`
+        SELECT id FROM users WHERE username = ? LIMIT 1
+      `, [studentName]);
       
       const studentId = result[0].id;
       
@@ -1637,7 +1643,7 @@ const startServer = async () => {
     // 启动HTTP服务
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ 成绩管理系统服务已启动`);
-      console.log(`🔗 访问地址: http://0.0.0.0:${PORT}`); // 日志更新为 0.0.0.0
+      console.log(`🔗 访问地址: http://0.0.0.0:${PORT}`);
       console.log(`📌 当前环境: ${ENV}`);
       console.log(`🕒 启动时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`);
     });
