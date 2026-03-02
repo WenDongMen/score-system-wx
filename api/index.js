@@ -12,7 +12,7 @@ const path = require('path');
 
 // 初始化Express应用
 const app = express();
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 8080;
 const ENV = process.env.ENV || 'production';
 
 // ===================== EJS模板引擎配置 =====================
@@ -28,13 +28,12 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ===================== 常量配置 =====================
-// MySQL数据库配置（适配Zeabur）
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'sjc1.clusters.zeabur.com',
-  port: parseInt(process.env.DB_PORT) || 26786,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'I4nKWkZd2SwN70YhlD53AH89c1qg6eTO',
-  database: process.env.DB_NAME || 'zeabur',
+  host: process.env.MYSQL_HOST || process.env.DB_HOST,
+  port: parseInt(process.env.MYSQL_PORT || process.env.DB_PORT),
+  user: process.env.MYSQL_USERNAME || process.env.DB_USER,
+  password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD,
+  database: process.env.MYSQL_DATABASE || process.env.DB_NAME,
   connectTimeout: 15000,
   ssl: false
 };
@@ -87,13 +86,13 @@ const testDbConnection = async () => {
   }
 };
 
-// 初始化数据库表结构（修复：补全函数定义）
+// 初始化数据库表结构
 const initializeDatabase = async () => {
   let client;
   try {
     client = await pool.getConnection();
     
-    // 创建用户表（MySQL语法）
+    // 创建用户表
     const createUserTable = `
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -109,7 +108,7 @@ const initializeDatabase = async () => {
     `;
     await client.query(createUserTable);
 
-    // 创建成绩表（MySQL语法）
+    // 创建成绩表
     const createScoreTable = `
       CREATE TABLE IF NOT EXISTS scores (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,7 +125,7 @@ const initializeDatabase = async () => {
     `;
     await client.query(createScoreTable);
 
-    // 插入默认管理员账号（MySQL占位符用?）
+    // 插入默认管理员账号
     const adminUsername = 'admin001';
     const adminPassword = 'Admin@123456';
     const [adminResult] = await client.query(
@@ -726,9 +725,9 @@ app.post('/api/admin/teachers', authRequired, requireAdmin, async (req, res) => 
       return res.json({ code: 400, msg: '用户名/密码/姓名不能为空！' });
     }
 
-    const [userCheck] = await pool.query(
-      'SELECT * FROM users WHERE username = ?',
-      [username]
+    await pool.query(
+      'INSERT INTO users (username, password, role, real_name) VALUES (?, ?, ?, ?)',
+      [username, hashedPwd, 'teacher', name]
     );
     if (userCheck.length > 0) {
       return res.json({ code: 400, msg: '该用户名已存在！' });
@@ -1623,7 +1622,6 @@ app.route('/api/student/change-password')
   });
 
 // ===================== 启动服务 =====================
-// ===================== 启动服务 =====================
 const startServer = async () => {
   try {
     // 测试数据库连接
@@ -1636,10 +1634,10 @@ const startServer = async () => {
     // 初始化数据库表结构
     await initializeDatabase();
 
-    // 关键修复：监听 0.0.0.0 而非 localhost
-    app.listen(PORT, '0.0.0.0', () => {
+    // 启动HTTP服务
+    app.listen(PORT, () => {
       console.log(`✅ 成绩管理系统服务已启动`);
-      console.log(`🔗 访问地址: http://0.0.0.0:${PORT}`); // 日志更新为 0.0.0.0
+      console.log(`🔗 访问地址: http://localhost:${PORT}`);
       console.log(`📌 当前环境: ${ENV}`);
       console.log(`🕒 启动时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`);
     });
@@ -1662,3 +1660,6 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// 执行启动函数
+startServer();
