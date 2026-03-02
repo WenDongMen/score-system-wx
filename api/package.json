@@ -20,7 +20,7 @@
     "ejs": "^4.0.1",
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.18.0"
+    "mysql2": "^3.9.1" // 替换 pg 为 mysql2
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
