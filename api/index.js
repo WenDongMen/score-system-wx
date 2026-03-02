@@ -12,7 +12,7 @@ const path = require('path');
 
 // 初始化Express应用
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 80;
 const ENV = process.env.ENV || 'production';
 
 // ===================== EJS模板引擎配置 =====================
@@ -1635,9 +1635,9 @@ const startServer = async () => {
     await initializeDatabase();
 
     // 启动HTTP服务
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ 成绩管理系统服务已启动`);
-      console.log(`🔗 访问地址: http://localhost:${PORT}`);
+      console.log(`🔗 访问地址: http://0.0.0.0:${PORT}`); // 日志更新为 0.0.0.0
       console.log(`📌 当前环境: ${ENV}`);
       console.log(`🕒 启动时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`);
     });
