@@ -1,7 +1,9 @@
+// 加载.env环境变量
+require('dotenv').config();
 // 核心依赖引入
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dayjs = require('dayjs');
@@ -12,68 +14,33 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 80;
 const ENV = process.env.ENV || 'production';
-app.use(express.static('public')); 
 
-function pageAuth(roles = []) {
-  return (req, res, next) => {
-    // 同时从请求头/URL参数获取token
-    const authHeader = req.headers.authorization || '';
-    const headerToken = authHeader.replace('Bearer ', '');
-    const urlToken = req.query.token || '';
-    const token = headerToken || urlToken;
-
-    if (!token) {
-      return res.redirect('/login');
-    }
-
-    try {
-      const decoded = jwt.verify(token, SECRET_KEY); 
-
-      // 角色校验
-      if (roles.length && !roles.includes(decoded.role)) {
-        return res.status(403).send('无权限访问');
-      }
-
-      // 挂载用户信息
-      req.user = decoded;
-
-      next();
-    } catch (err) {
-      return res.redirect('/login');
-    }
-  };
-}
-
-
-// ===================== EJS模板引擎配置（核心新增） =====================
-// 设置EJS为模板引擎
+// ===================== EJS模板引擎配置 =====================
 app.set('view engine', 'ejs');
-// 配置模板文件目录（views），适配项目目录结构，__dirname为当前文件所在目录
 app.set('views', path.join(__dirname, 'views'));
-// 可选：配置静态资源目录（如css、js、img），前端页面可直接引用
+// 静态资源目录
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static('public'));
 
 // ===================== 基础配置 =====================
-// 中间件配置
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ===================== 常量配置 =====================
-// 数据库配置
+// MySQL数据库配置（适配Zeabur）
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'dpg-d5m9ag14tr6s73cfopo0-a.virginia-postgres.render.com',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  user: process.env.DB_USER || 'score_db_dqiq_user',
-  password: process.env.DB_PASSWORD || '6CncyAag2G5oZO1xzD8ivWLwX7KERH2v',
-  database: process.env.DB_NAME || 'score_db_dqiq',
-  connectTimeoutMillis: 15000,
-  ssl: { rejectUnauthorized: false } // Render PostgreSQL要求SSL
+  host: process.env.DB_HOST || 'sjc1.clusters.zeabur.com',
+  port: parseInt(process.env.DB_PORT) || 26786,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'I4nKWkZd2SwN70YhlD53AH89c1qg6eTO',
+  database: process.env.DB_NAME || 'zeabur',
+  connectTimeout: 15000,
+  ssl: false
 };
 
 // JWT配置
-const SECRET_KEY = process.env.SECRET_KEY || 'pOAIi4ZR2aVxQ3KB-n9PSY5rMrxW0pA39sP32ZQuEyk';
+const SECRET_KEY = process.env.SECRET_KEY || process.env.JWT_SECRET || 'pOAIi4ZR2aVxQ3KB-n9PSY5rMrxW0pA39sP32ZQuEyk';
 const TOKEN_EXPIRE_HOURS = parseInt(process.env.TOKEN_EXPIRE_HOURS) || 24;
 
 // 安全配置
@@ -94,25 +61,25 @@ const logAudit = (operation, userId, username, remoteAddr, details = "", level =
 };
 
 // ===================== 数据库工具 =====================
-// 创建数据库连接池（全局唯一）
-const pool = new Pool({
+// 创建MySQL连接池
+const pool = mysql.createPool({
   host: DB_CONFIG.host,
   port: DB_CONFIG.port,
   user: DB_CONFIG.user,
   password: DB_CONFIG.password,
   database: DB_CONFIG.database,
-  connectTimeoutMillis: DB_CONFIG.connectTimeoutMillis,
+  connectTimeout: DB_CONFIG.connectTimeout,
   ssl: DB_CONFIG.ssl,
-  max: 10 // 连接池最大连接数
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 // 测试数据库连接
 const testDbConnection = async () => {
   try {
-    const client = await pool.connect();
-    await client.query('SELECT 1');
-    client.release();
-    console.log('✅ PostgreSQL数据库连接成功');
+    const [rows] = await pool.query('SELECT 1');
+    console.log('✅ MySQL数据库连接成功');
     return true;
   } catch (err) {
     console.error('❌ 数据库连接失败：', err.message);
@@ -120,57 +87,58 @@ const testDbConnection = async () => {
   }
 };
 
-// 初始化数据库表结构
+// 初始化数据库表结构（修复：补全函数定义）
 const initializeDatabase = async () => {
-  let client = null;
+  let client;
   try {
-    client = await pool.connect();
+    client = await pool.getConnection();
     
-    // 创建用户表
+    // 创建用户表（MySQL语法）
     const createUserTable = `
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(100) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'teacher', 'admin')),
+        role VARCHAR(20) NOT NULL,
         id_card VARCHAR(18) UNIQUE,
         class_name VARCHAR(50),
-        bind_time TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        bind_time DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT check_role CHECK (role IN ('student', 'teacher', 'admin'))
       );
     `;
     await client.query(createUserTable);
 
-    // 创建成绩表
+    // 创建成绩表（MySQL语法）
     const createScoreTable = `
       CREATE TABLE IF NOT EXISTS scores (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         subject VARCHAR(50) NOT NULL,
         score FLOAT NOT NULL,
         exam_date DATE NOT NULL,
         created_by INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE (user_id, subject, exam_date)
+        UNIQUE KEY unique_score (user_id, subject, exam_date)
       );
     `;
     await client.query(createScoreTable);
 
-    // 插入默认管理员账号
+    // 插入默认管理员账号（MySQL占位符用?）
     const adminUsername = 'admin001';
     const adminPassword = 'Admin@123456';
-    const adminResult = await client.query(
-      `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+    const [adminResult] = await client.query(
+      `SELECT id FROM users WHERE username = ? LIMIT 1`,
       [adminUsername]
     );
 
-    if (adminResult.rows.length === 0) {
+    if (adminResult.length === 0) {
       const hashedAdminPwd = bcrypt.hashSync(adminPassword, BCRYPT_ROUNDS);
       await client.query(`
         INSERT INTO users (username, password, role)
-        VALUES ($1, $2, 'admin')
+        VALUES (?, ?, 'admin')
       `, [adminUsername, hashedAdminPwd]);
       console.log(`✅ 默认管理员账号创建成功：${adminUsername}/${adminPassword}`);
     }
@@ -178,16 +146,16 @@ const initializeDatabase = async () => {
     // 插入默认教师账号
     const teacherUsername = 'teacher001';
     const teacherPassword = '123456';
-    const teacherResult = await client.query(
-      `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+    const [teacherResult] = await client.query(
+      `SELECT id FROM users WHERE username = ? LIMIT 1`,
       [teacherUsername]
     );
 
-    if (teacherResult.rows.length === 0) {
+    if (teacherResult.length === 0) {
       const hashedTeacherPwd = bcrypt.hashSync(teacherPassword, BCRYPT_ROUNDS);
       await client.query(`
         INSERT INTO users (username, password, role, id_card, class_name)
-        VALUES ($1, $2, 'teacher', NULL, NULL)
+        VALUES (?, ?, 'teacher', NULL, NULL)
       `, [teacherUsername, hashedTeacherPwd]);
       console.log(`✅ 默认教师账号创建成功：${teacherUsername}/${teacherPassword}`);
     }
@@ -197,9 +165,7 @@ const initializeDatabase = async () => {
     console.error('❌ 数据库初始化失败：', err.message);
     logAudit('数据库初始化', -1, 'system', 'localhost', `错误：${err.message}`, 'ERROR');
   } finally {
-    if (client) {
-      client.release();
-    }
+    if (client) client.release();
   }
 };
 
@@ -209,55 +175,7 @@ const hashPassword = (plainPassword) => {
   const salt = bcrypt.genSaltSync(BCRYPT_ROUNDS);
   return bcrypt.hashSync(plainPassword, salt);
 };
-// 前端添加教师的函数（完整修复版）
-async function addTeacher(teacherFormData) {
-  // 1. 先从localStorage取Token（确保非空）
-  const token = localStorage.getItem('token');
-  if (!token) {
-    alert('登录状态失效，请重新登录！');
-    window.location.href = '/login'; // 跳回登录页
-    return;
-  }
 
-  try {
-    // 2. 修复请求地址：/api/admin/teachers（带/api前缀）
-    const res = await fetch('/api/admin/teachers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // 修复Token为空问题
-      },
-      body: JSON.stringify(teacherFormData) // 教师信息：username/password/name等
-    });
-
-    // 3. 先判断响应是否正常，避免解析404 HTML
-    if (!res.ok) {
-      // 404/401/500时，先尝试解析JSON错误信息，再提示
-      let errorMsg = '添加失败：服务器错误';
-      try {
-        const errData = await res.json();
-        errorMsg = errData.msg || errorMsg;
-      } catch (e) {
-        // 解析失败（返回HTML），直接提示
-        errorMsg = '请求地址错误，请联系开发人员';
-      }
-      alert(errorMsg);
-      return;
-    }
-
-    // 4. 解析正确的JSON响应
-    const data = await res.json();
-    if (data.code === 200) {
-      alert('教师添加成功！');
-      // 清空表单/刷新列表等操作
-    } else {
-      alert('添加失败：' + data.msg);
-    }
-  } catch (err) {
-    console.error('添加教师请求报错：', err);
-    alert('网络错误，请重试！');
-  }
-}
 // 验证密码
 const verifyPassword = (plainPassword, hashedPassword) => {
   return bcrypt.compareSync(plainPassword, hashedPassword);
@@ -332,121 +250,128 @@ const validatePasswordStrength = (password) => {
   return { valid: true, message: '密码复杂度符合要求' };
 };
 
+// ===================== 页面权限中间件 =====================
+function pageAuth(roles = []) {
+  return (req, res, next) => {
+    const authHeader = req.headers.authorization || '';
+    const headerToken = authHeader.replace('Bearer ', '');
+    const urlToken = req.query.token || '';
+    const token = headerToken || urlToken;
+
+    if (!token) {
+      return res.redirect('/login');
+    }
+
+    try {
+      const decoded = jwt.verify(token, SECRET_KEY); 
+      if (roles.length && !roles.includes(decoded.role)) {
+        return res.status(403).send('无权限访问');
+      }
+      req.user = decoded;
+      next();
+    } catch (err) {
+      return res.redirect('/login');
+    }
+  };
+}
+
 // ===================== 成绩统计工具 =====================
-// 计算级部排名
+// 计算级部排名（适配MySQL语法）
 const calculateGradeRank = async (examDate, subject, score) => {
-  let client = null;
   try {
-    client = await pool.connect();
-    const result = await client.query(`
+    const [result] = await pool.query(`
       SELECT COUNT(DISTINCT user_id) as count
       FROM scores 
-      WHERE exam_date = $1 AND subject = $2 AND score > $3
+      WHERE exam_date = ? AND subject = ? AND score > ?
     `, [examDate, subject, score]);
     
-    return (result.rows[0].count || 0) + 1;
+    return (result[0].count || 0) + 1;
   } catch (err) {
     logAudit('计算级部排名', -1, 'system', 'unknown', `错误：${err.message}`, 'WARNING');
     return 0;
-  } finally {
-    if (client) client.release();
   }
 };
 
 // 计算班级排名
 const calculateClassRank = async (userId, examDate, subject, score) => {
-  let client = null;
   try {
-    client = await pool.connect();
     // 获取学生班级
-    const userResult = await client.query(`
-      SELECT class_name FROM users WHERE id = $1 LIMIT 1
+    const [userResult] = await pool.query(`
+      SELECT class_name FROM users WHERE id = ? LIMIT 1
     `, [userId]);
     
-    if (!userResult.rows[0]?.class_name) return 0;
-    const className = userResult.rows[0].class_name;
+    if (!userResult[0]?.class_name) return 0;
+    const className = userResult[0].class_name;
     
     // 计算排名
-    const result = await client.query(`
+    const [result] = await pool.query(`
       SELECT COUNT(DISTINCT s.user_id) as count
       FROM scores s
       JOIN users u ON s.user_id = u.id
-      WHERE s.exam_date = $1 AND s.subject = $2 AND s.score > $3 AND u.class_name = $4
+      WHERE s.exam_date = ? AND s.subject = ? AND s.score > ? AND u.class_name = ?
     `, [examDate, subject, score, className]);
     
-    return (result.rows[0].count || 0) + 1;
+    return (result[0].count || 0) + 1;
   } catch (err) {
     logAudit('计算班级排名', userId, 'unknown', 'unknown', `错误：${err.message}`, 'WARNING');
     return 0;
-  } finally {
-    if (client) client.release();
   }
 };
 
 // 判断是否级部前十
 const isGradeTopTen = async (examDate, subject, score) => {
-  let client = null;
   try {
-    client = await pool.connect();
-    const result = await client.query(`
+    const [result] = await pool.query(`
       SELECT COUNT(DISTINCT user_id) as count
       FROM scores 
-      WHERE exam_date = $1 AND subject = $2 AND score > $3
+      WHERE exam_date = ? AND subject = ? AND score > ?
     `, [examDate, subject, score]);
     
-    return (result.rows[0].count || 0) < 10;
+    return (result[0].count || 0) < 10;
   } catch (err) {
     logAudit('判断级部前十', -1, 'system', 'unknown', `错误：${err.message}`, 'WARNING');
     return false;
-  } finally {
-    if (client) client.release();
   }
 };
 
 // 获取历史总分
 const getExamHistoryScores = async (userId) => {
-  let client = null;
   try {
-    client = await pool.connect();
-    const result = await client.query(`
+    const [result] = await pool.query(`
       SELECT 
         exam_date,
         SUM(score) AS total_score
       FROM scores 
-      WHERE user_id = $1 
+      WHERE user_id = ? 
       GROUP BY exam_date 
       ORDER BY exam_date ASC
     `, [userId]);
     
-    return result.rows.map(row => ({
+    return result.map(row => ({
       exam_date: dayjs(row.exam_date).format('YYYY-MM-DD'),
       total_score: Math.round(Number(row.total_score) * 10) / 10
     }));
   } catch (err) {
     logAudit('获取历史总分', userId, 'unknown', 'unknown', `错误：${err.message}`, 'WARNING');
     return [];
-  } finally {
-    if (client) client.release();
   }
 };
 
 // 获取单科历史成绩
 const getSubjectHistoryScores = async (userId) => {
-  let client = null;
   try {
-    client = await pool.connect();
-    const result = await client.query(`
+    const [result] = await pool.query(`
       SELECT 
         subject,
         exam_date,
         score
       FROM scores 
-      WHERE user_id = $1 
+      WHERE user_id = ? 
       ORDER BY subject ASC, exam_date ASC
     `, [userId]);
     
     const subjectData = {};
-    result.rows.forEach(row => {
+    result.forEach(row => {
       const subject = row.subject;
       if (!subjectData[subject]) {
         subjectData[subject] = {
@@ -465,60 +390,54 @@ const getSubjectHistoryScores = async (userId) => {
   } catch (err) {
     logAudit('获取单科历史成绩', userId, 'unknown', 'unknown', `错误：${err.message}`, 'WARNING');
     return [];
-  } finally {
-    if (client) client.release();
   }
 };
 
 // 计算总分排名
 const calculateExamTotalRank = async (userId, examDate, totalScore) => {
-  let client = null;
   try {
-    client = await pool.connect();
     // 获取学生班级
-    const userResult = await client.query(`
-      SELECT class_name FROM users WHERE id = $1 LIMIT 1
+    const [userResult] = await pool.query(`
+      SELECT class_name FROM users WHERE id = ? LIMIT 1
     `, [userId]);
-    const className = userResult.rows[0]?.class_name;
+    const className = userResult[0]?.class_name;
     
     // 级部排名
-    const gradeResult = await client.query(`
+    const [gradeResult] = await pool.query(`
       SELECT COUNT(DISTINCT s1.user_id) AS rank_count
       FROM (
         SELECT user_id, SUM(score) AS total
         FROM scores 
-        WHERE exam_date = $1 
+        WHERE exam_date = ? 
         GROUP BY user_id
       ) s1
-      WHERE s1.total > $2
+      WHERE s1.total > ?
     `, [examDate, totalScore]);
     
-    const gradeRank = (gradeResult.rows[0].rank_count || 0) + 1;
+    const gradeRank = (gradeResult[0].rank_count || 0) + 1;
     
     // 班级排名
     let classRank = 0;
     if (className) {
-      const classResult = await client.query(`
+      const [classResult] = await pool.query(`
         SELECT COUNT(DISTINCT s1.user_id) AS rank_count
         FROM (
           SELECT s.user_id, SUM(s.score) AS total
           FROM scores s
           JOIN users u ON s.user_id = u.id
-          WHERE s.exam_date = $1 AND u.class_name = $2
+          WHERE s.exam_date = ? AND u.class_name = ?
           GROUP BY s.user_id
         ) s1
-        WHERE s1.total > $3
+        WHERE s1.total > ?
       `, [examDate, className, totalScore]);
       
-      classRank = (classResult.rows[0].rank_count || 0) + 1;
+      classRank = (classResult[0].rank_count || 0) + 1;
     }
     
     return { grade_rank: gradeRank, class_rank: classRank };
   } catch (err) {
     logAudit('计算总分排名', userId, 'unknown', 'unknown', `错误：${err.message}`, 'WARNING');
     return { grade_rank: 0, class_rank: 0 };
-  } finally {
-    if (client) client.release();
   }
 };
 
@@ -554,7 +473,7 @@ const getRankChange = async (userId, examDate, currentGradeRank) => {
   }
 };
 
-// ===================== 中间件 =====================
+// ===================== 接口权限中间件 =====================
 // 认证中间件
 const authRequired = (req, res, next) => {
   try {
@@ -576,7 +495,6 @@ const authRequired = (req, res, next) => {
       }));
     }
     
-    // 检查角色权限
     if (req.roleRequired && userInfo.role !== req.roleRequired) {
       logAudit('权限校验', userInfo.user_id, userInfo.username, req.ip, 
                `无${req.roleRequired}角色权限，操作被拒绝`, 'WARNING');
@@ -662,7 +580,7 @@ const handleException = (apiName) => {
 };
 
 // ===================== API接口 =====================
-// 新增：EJS页面渲染根路由（核心整合点）
+// 首页渲染
 app.get('/', async (req, res) => {
   try {
     const healthStatus = '正常运行';
@@ -681,8 +599,7 @@ app.get('/', async (req, res) => {
   }
 });
 
-
-// 原有根路径调整为/info，避免和EJS渲染路由冲突
+// 服务信息
 app.get('/info', (req, res) => {
   res.json({
     code:200,
@@ -691,6 +608,7 @@ app.get('/info', (req, res) => {
   });
 });
 
+// 测试接口
 app.get('/test', (req, res) => {
   res.json({
     status: 'ok',
@@ -699,6 +617,7 @@ app.get('/test', (req, res) => {
   });
 });
 
+// 获取当前登录用户信息
 app.get('/api/me', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) {
@@ -708,8 +627,6 @@ app.get('/api/me', (req, res) => {
   try {
     const token = auth.split(' ')[1];
     const user = jwt.verify(token, SECRET_KEY);
-
-
     res.json({
       loggedIn: true,
       user
@@ -719,20 +636,16 @@ app.get('/api/me', (req, res) => {
   }
 });
 
-
-// 登录路由（GET渲染EJS + POST接口 + 自动兼容html后缀）
+// 登录接口（适配MySQL）
 app.route('/login')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
-  // GET → 渲染EJS登录页，无任何html路径
   .get((req, res) => {
     res.render('login', {
       title: '登录 - 学生成绩管理系统',
       msg: ''
     });
   })
-  // POST → 登录接口，原样保留逻辑，只修复兼容
   .post(handleException('用户登录'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       if (!data) {
@@ -759,13 +672,11 @@ app.route('/login')
         }));
       }
 
-      client = await pool.connect();
-      const result = await client.query(`
-        SELECT id, username, password, role, id_card, class_name FROM users WHERE username = $1 LIMIT 1
+      const [result] = await pool.query(`
+        SELECT id, username, password, role, id_card, class_name FROM users WHERE username = ? LIMIT 1
       `, [username]);
 
-      // 账号不存在
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         logAudit('用户登录', -1, username, req.ip, '账号不存在', 'WARNING');
         return res.status(401).json(xssEscape({
           code: 401,
@@ -773,13 +684,10 @@ app.route('/login')
         }));
       }
 
-      const user = result.rows[0];
-      // 密码正确
+      const user = result[0];
       if (verifyPassword(password, user.password)) {
         const token = generateJwt(user.id, user.username, user.role);
-
         logAudit('用户登录', user.id, user.username, req.ip, `角色：${user.role}，登录成功`);
-
         return res.json(xssEscape({
           code: 200,
           message: '登录成功',
@@ -806,68 +714,55 @@ app.route('/login')
         code: 500,
         message: '登录失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
 // -------------------------- 管理员接口 --------------------------
-// 查询所有教师
-// 后端添加教师的API路由（完整版，带权限验证+错误处理）
-// 依赖：先确保有authRequired（Token验证）、requireAdmin（管理员权限）中间件
+// 添加教师
 app.post('/api/admin/teachers', authRequired, requireAdmin, async (req, res) => {
   try {
-    // 1. 接收前端传的教师信息
     const { username, password, name } = req.body;
-
-    // 2. 基础参数校验
     if (!username || !password || !name) {
       return res.json({ code: 400, msg: '用户名/密码/姓名不能为空！' });
     }
 
-    // 3. 检查用户名是否已存在（避免重复）
-    const userCheck = await pool.query(
-      'SELECT * FROM users WHERE username = $1',
+    const [userCheck] = await pool.query(
+      'SELECT * FROM users WHERE username = ?',
       [username]
     );
-    if (userCheck.rows.length > 0) {
+    if (userCheck.length > 0) {
       return res.json({ code: 400, msg: '该用户名已存在！' });
     }
 
-    // 4. 密码哈希（安全存储，避免明文）
-    const bcrypt = require('bcrypt');
-    const hashedPwd = await bcrypt.hash(password, 10); // 10是哈希轮数
-
-    // 5. 插入教师数据到users表（role=teacher）
+    const hashedPwd = bcrypt.hashSync(password, 10);
     await pool.query(
-      'INSERT INTO users (username, password, role, name) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO users (username, password, role, username) VALUES (?, ?, ?, ?)',
       [username, hashedPwd, 'teacher', name]
     );
 
-    // 6. 返回JSON结果（关键：不返回HTML）
     res.json({ code: 200, msg: '教师添加成功！' });
   } catch (err) {
     console.error('添加教师报错：', err);
-    // 异常时也返回JSON，而非HTML
     res.json({ code: 500, msg: '服务器错误：' + err.message });
   }
 });
 
+// 教师页面渲染
 app.get('/teacher', pageAuth(['teacher']), (req, res) => {
   try {
-    // 从token中解析用户信息，传递给EJS模板
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
     const userInfo = verifyJwt(token) || {};
     
     res.render('teacher', {
       title: '教师工作台 - 学生成绩管理系统',
-      user: userInfo // 传递用户信息到模板
+      user: userInfo
     });
   } catch (err) {
     res.status(500).send('页面加载失败：' + err.message);
   }
 });
 
+// 管理员页面渲染
 app.get('/admin', pageAuth(['admin']), (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '') || '';
@@ -882,13 +777,10 @@ app.get('/admin', pageAuth(['admin']), (req, res) => {
   }
 });
 
-
-
 // 新增教师
 app.route('/api/admin/teacher/add')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireAdmin, handleException('管理员新增教师'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -915,12 +807,11 @@ app.route('/api/admin/teacher/add')
       }
       
       // 检查用户名是否存在
-      client = await pool.connect();
-      let result = await client.query(`
-        SELECT id FROM users WHERE username = $1;
+      const [result] = await pool.query(`
+        SELECT id FROM users WHERE username = ?;
       `, [data.username]);
       
-      if (result.rows.length > 0) {
+      if (result.length > 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '用户名已存在'
@@ -929,17 +820,17 @@ app.route('/api/admin/teacher/add')
       
       // 添加教师
       const hashedPwd = hashPassword(data.password);
-      await client.query(`
+      await pool.query(`
         INSERT INTO users (username, password, role, id_card, class_name) 
-        VALUES ($1, $2, 'teacher', NULL, NULL);
+        VALUES (?, ?, 'teacher', NULL, NULL);
       `, [data.username, hashedPwd]);
       
       // 获取新增教师信息
-      result = await client.query(`
-        SELECT id, username FROM users WHERE username = $1;
+      const [newTeacherResult] = await pool.query(`
+        SELECT id, username FROM users WHERE username = ?;
       `, [data.username]);
       
-      const newTeacher = result.rows[0];
+      const newTeacher = newTeacherResult[0];
       logAudit('管理员新增教师', req.userInfo.user_id, req.userInfo.username, req.ip, 
                `新增教师：${data.username}（ID：${newTeacher.id}）`);
       
@@ -954,8 +845,6 @@ app.route('/api/admin/teacher/add')
         code: 500,
         message: '添加失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -963,7 +852,6 @@ app.route('/api/admin/teacher/add')
 app.route('/api/admin/teacher/delete/:teacherId')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .delete(requireAdmin, handleException('管理员删除教师'), async (req, res) => {
-    let client = null;
     try {
       const teacherId = parseInt(req.params.teacherId);
       if (isNaN(teacherId)) {
@@ -973,21 +861,20 @@ app.route('/api/admin/teacher/delete/:teacherId')
         }));
       }
       
-      client = await pool.connect();
-      const result = await client.query(`
-        SELECT id, username FROM users WHERE id = $1 AND role = 'teacher';
+      const [result] = await pool.query(`
+        SELECT id, username FROM users WHERE id = ? AND role = 'teacher';
       `, [teacherId]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '教师不存在'
         }));
       }
       
-      const teacher = result.rows[0];
-      await client.query(`
-        DELETE FROM users WHERE id = $1 AND role = 'teacher';
+      const teacher = result[0];
+      await pool.query(`
+        DELETE FROM users WHERE id = ? AND role = 'teacher';
       `, [teacherId]);
       
       logAudit('管理员删除教师', req.userInfo.user_id, req.userInfo.username, req.ip, 
@@ -1003,21 +890,17 @@ app.route('/api/admin/teacher/delete/:teacherId')
         code: 500,
         message: '删除失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
-// 修复：更改教师密码（原代码误写为删除教师，已修正核心逻辑）
+// 更改教师密码
 app.route('/api/admin/teacher/password/:teacherId')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .put(requireAdmin, handleException('管理员更改教师密码'), async (req, res) => {
-    let client = null;
     try {
       const teacherId = parseInt(req.params.teacherId);
       const { new_password } = req.body;
       
-      // 验证ID和新密码
       if (isNaN(teacherId)) {
         return res.status(400).json(xssEscape({
           code: 400,
@@ -1030,19 +913,18 @@ app.route('/api/admin/teacher/password/:teacherId')
           message: '新密码不能为空'
         }));
       }
-      // 密码强度校验
+      
       const { valid, message } = validatePasswordStrength(new_password);
       if (!valid) {
         return res.status(400).json(xssEscape({ code: 400, message }));
       }
       
       // 检查教师是否存在
-      client = await pool.connect();
-      const result = await client.query(`
-        SELECT id, username FROM users WHERE id = $1 AND role = 'teacher';
+      const [result] = await pool.query(`
+        SELECT id, username FROM users WHERE id = ? AND role = 'teacher';
       `, [teacherId]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '教师不存在'
@@ -1050,10 +932,10 @@ app.route('/api/admin/teacher/password/:teacherId')
       }
       
       // 加密新密码并更新
-      const teacher = result.rows[0];
+      const teacher = result[0];
       const hashedNewPwd = hashPassword(new_password);
-      await client.query(`
-        UPDATE users SET password = $1 WHERE id = $2 AND role = 'teacher';
+      await pool.query(`
+        UPDATE users SET password = ? WHERE id = ? AND role = 'teacher';
       `, [hashedNewPwd, teacherId]);
       
       logAudit('管理员更改教师密码', req.userInfo.user_id, req.userInfo.username, req.ip, 
@@ -1069,8 +951,6 @@ app.route('/api/admin/teacher/password/:teacherId')
         code: 500,
         message: '密码修改失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1079,7 +959,6 @@ app.route('/api/admin/teacher/password/:teacherId')
 app.route('/api/teacher/student/search')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .get(requireRole('teacher'), handleException('教师搜索学生'), async (req, res) => {
-    let client = null;
     try {
       const keyword = req.query.keyword?.trim() || '';
       
@@ -1090,16 +969,15 @@ app.route('/api/teacher/student/search')
         }));
       }
       
-      client = await pool.connect();
-      const result = await client.query(`
+      const [result] = await pool.query(`
         SELECT id, username AS name, id_card AS idCard, class_name AS className 
         FROM users 
         WHERE role = 'student' 
-        AND (username LIKE $1 OR id::text LIKE $2 OR id_card LIKE $3)
+        AND (username LIKE ? OR id LIKE ? OR id_card LIKE ?)
         ORDER BY created_at DESC;
       `, [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`]);
       
-      const students = result.rows.map(student => ({
+      const students = result.map(student => ({
         id: student.id,
         name: student.name,
         no: student.id,
@@ -1121,8 +999,6 @@ app.route('/api/teacher/student/search')
         code: 500,
         message: '搜索失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1130,35 +1006,30 @@ app.route('/api/teacher/student/search')
 app.route('/api/teacher/subject/statistics')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .get(requireRole('teacher'), handleException('教师查询科目统计'), async (req, res) => {
-    let client = null;
     try {
-      // 可选：接收前端传的考试日期参数，无参数则查所有
       const examDate = req.query.exam_date?.trim() || '';
       
-      client = await pool.connect();
       let querySql = `
         SELECT 
           subject,
-          AVG(score) as avg_score,       -- 平均分
-          MAX(score) as max_score,       -- 最高分
-          MIN(score) as min_score,       -- 最低分
-          COUNT(*) as student_count      -- 参考人数
+          AVG(score) as avg_score,
+          MAX(score) as max_score,
+          MIN(score) as min_score,
+          COUNT(*) as student_count
         FROM scores 
       `;
       const queryParams = [];
       
-      // 如果传了考试日期，添加筛选条件
       if (examDate) {
-        querySql += ` WHERE exam_date = $1 `;
+        querySql += ` WHERE exam_date = ? `;
         queryParams.push(examDate);
       }
       
       querySql += ` GROUP BY subject ORDER BY subject ASC;`;
       
-      const result = await client.query(querySql, queryParams);
+      const [result] = await pool.query(querySql, queryParams);
       
-      // 格式化数据（保留1位小数）
-      const statistics = result.rows.map(item => ({
+      const statistics = result.map(item => ({
         subject: item.subject,
         avg_score: Math.round(Number(item.avg_score) * 10) / 10,
         max_score: Math.round(Number(item.max_score) * 10) / 10,
@@ -1180,8 +1051,6 @@ app.route('/api/teacher/subject/statistics')
         code: 500,
         message: '查询失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
   
@@ -1189,17 +1058,15 @@ app.route('/api/teacher/subject/statistics')
 app.route('/api/teacher/student/list')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .get(requireRole('teacher'), handleException('教师查询学生列表'), async (req, res) => {
-    let client = null;
     try {
-      client = await pool.connect();
-      const result = await client.query(`
+      const [result] = await pool.query(`
         SELECT id, username, class_name, created_at 
         FROM users 
         WHERE role = 'student' 
         ORDER BY created_at DESC;
       `);
       
-      const students = result.rows.map(student => ({
+      const students = result.map(student => ({
         ...student,
         created_at: student.created_at ? dayjs(student.created_at).format('YYYY-MM-DD HH:mm:ss') : null
       }));
@@ -1218,8 +1085,6 @@ app.route('/api/teacher/student/list')
         code: 500,
         message: '查询失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1227,7 +1092,6 @@ app.route('/api/teacher/student/list')
 app.route('/api/teacher/student/add')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('teacher'), handleException('教师添加学生'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -1263,14 +1127,12 @@ app.route('/api/teacher/student/add')
         }));
       }
       
-      client = await pool.connect();
-      
       // 检查身份证号是否已绑定
-      let result = await client.query(`
-        SELECT id FROM users WHERE id_card = $1 LIMIT 1
+      let [result] = await pool.query(`
+        SELECT id FROM users WHERE id_card = ? LIMIT 1
       `, [studentIdCard]);
       
-      if (result.rows.length > 0) {
+      if (result.length > 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '该身份证号已绑定学生'
@@ -1278,11 +1140,11 @@ app.route('/api/teacher/student/add')
       }
       
       // 检查用户名是否存在
-      result = await client.query(`
-        SELECT id FROM users WHERE username = $1 LIMIT 1
+      [result] = await pool.query(`
+        SELECT id FROM users WHERE username = ? LIMIT 1
       `, [studentName]);
       
-      if (result.rows.length > 0) {
+      if (result.length > 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '该学生姓名已存在'
@@ -1293,13 +1155,13 @@ app.route('/api/teacher/student/add')
       const initialPwd = studentIdCard.slice(-6);
       const hashedPwd = hashPassword(initialPwd);
       
-      result = await client.query(`
+      [result] = await pool.query(`
         INSERT INTO users (username, password, role, id_card, class_name, bind_time)
-        VALUES ($1, $2, 'student', $3, $4, CURRENT_TIMESTAMP)
+        VALUES (?, ?, 'student', ?, ?, CURRENT_TIMESTAMP)
         RETURNING id;
       `, [studentName, hashedPwd, studentIdCard, className]);
       
-      const studentId = result.rows[0].id;
+      const studentId = result[0].id;
       
       logAudit('教师添加学生', req.userInfo.user_id, req.userInfo.username, req.ip, 
                `新增学生：${studentName}（ID：${studentId}，班级：${className}）`);
@@ -1320,8 +1182,6 @@ app.route('/api/teacher/student/add')
         code: 500,
         message: '添加失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1329,7 +1189,6 @@ app.route('/api/teacher/student/add')
 app.route('/api/teacher/add-score')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('teacher'), handleException('教师添加成绩'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -1373,30 +1232,28 @@ app.route('/api/teacher/add-score')
         }));
       }
       
-      client = await pool.connect();
-      
       // 检查学生是否存在
-      let result = await client.query(`
-        SELECT id, username FROM users WHERE id = $1 AND role = 'student' LIMIT 1
+      let [result] = await pool.query(`
+        SELECT id, username FROM users WHERE id = ? AND role = 'student' LIMIT 1
       `, [studentId]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '所选学生不存在'
         }));
       }
       
-      const student = result.rows[0];
+      const student = result[0];
       
       // 检查成绩是否已存在
-      result = await client.query(`
+      [result] = await pool.query(`
         SELECT id FROM scores 
-        WHERE user_id = $1 AND subject = $2 AND exam_date = $3 
+        WHERE user_id = ? AND subject = ? AND exam_date = ? 
         LIMIT 1
       `, [studentId, subject, examDate]);
       
-      if (result.rows.length > 0) {
+      if (result.length > 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: `该学生${examDate}的${subject}成绩已存在`
@@ -1404,9 +1261,9 @@ app.route('/api/teacher/add-score')
       }
       
       // 添加成绩
-      await client.query(`
+      await pool.query(`
         INSERT INTO scores (user_id, subject, score, exam_date, created_by)
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES (?, ?, ?, ?, ?)
       `, [studentId, subject, score, examDate, req.userInfo.user_id]);
       
       logAudit('教师添加成绩', req.userInfo.user_id, req.userInfo.username, req.ip, 
@@ -1428,8 +1285,6 @@ app.route('/api/teacher/add-score')
         code: 500,
         message: '添加失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1437,7 +1292,6 @@ app.route('/api/teacher/add-score')
 app.route('/api/teacher/change-password')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('teacher'), handleException('教师修改密码'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -1475,19 +1329,18 @@ app.route('/api/teacher/change-password')
       }
       
       // 验证原密码
-      client = await pool.connect();
-      const result = await client.query(`
-        SELECT password FROM users WHERE id = $1 LIMIT 1
+      const [result] = await pool.query(`
+        SELECT password FROM users WHERE id = ? LIMIT 1
       `, [userId]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '用户不存在'
         }));
       }
       
-      const user = result.rows[0];
+      const user = result[0];
       if (!verifyPassword(oldPassword, user.password)) {
         logAudit('教师修改密码', userId, req.userInfo.username, req.ip, '原密码错误', 'WARNING');
         return res.status(400).json(xssEscape({
@@ -1498,8 +1351,8 @@ app.route('/api/teacher/change-password')
       
       // 修改密码
       const hashedNewPwd = hashPassword(newPassword);
-      await client.query(`
-        UPDATE users SET password = $1 WHERE id = $2
+      await pool.query(`
+        UPDATE users SET password = ? WHERE id = ?
       `, [hashedNewPwd, userId]);
       
       logAudit('教师修改密码', userId, req.userInfo.username, req.ip, '密码修改成功');
@@ -1514,8 +1367,6 @@ app.route('/api/teacher/change-password')
         code: 500,
         message: '修改失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1524,24 +1375,22 @@ app.route('/api/teacher/change-password')
 app.route('/api/student/score/my')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('student'), handleException('学生查询自身成绩'), async (req, res) => {
-    let client = null;
     try {
       const userId = req.userInfo.user_id;
-      client = await pool.connect();
       
-      const result = await client.query(`
+      const [result] = await pool.query(`
         SELECT 
           subject,
           score,
           exam_date
         FROM scores 
-        WHERE user_id = $1 
+        WHERE user_id = ? 
         ORDER BY exam_date DESC, subject ASC
       `, [userId]);
       
       // 按考试日期分组
       const examGroup = {};
-      for (const item of result.rows) {
+      for (const item of result) {
         const examDate = dayjs(item.exam_date).format('YYYY-MM-DD');
         
         if (!examGroup[examDate]) {
@@ -1553,7 +1402,6 @@ app.route('/api/student/score/my')
           };
         }
         
-        // 判断是否级部前十
         const isTopTen = await isGradeTopTen(examDate, item.subject, item.score);
         
         examGroup[examDate].subjects.push({
@@ -1582,10 +1430,8 @@ app.route('/api/student/score/my')
         });
       }
       
-      // 按考试日期倒序排序
       examList.sort((a, b) => dayjs(b.exam_date).unix() - dayjs(a.exam_date).unix());
       
-      // 获取历史成绩
       const historyScores = await getExamHistoryScores(userId);
       const subjectHistory = await getSubjectHistoryScores(userId);
       
@@ -1607,8 +1453,6 @@ app.route('/api/student/score/my')
         code: 500,
         message: '查询失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1616,7 +1460,6 @@ app.route('/api/student/score/my')
 app.route('/api/student/score/detail')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('student'), handleException('学生查询考试详情'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -1630,18 +1473,17 @@ app.route('/api/student/score/detail')
       const examDate = data.exam_date.trim();
       const userId = req.userInfo.user_id;
       
-      client = await pool.connect();
-      const result = await client.query(`
+      const [result] = await pool.query(`
         SELECT 
           subject,
           score,
           exam_date
         FROM scores 
-        WHERE user_id = $1 AND exam_date = $2
+        WHERE user_id = ? AND exam_date = ?
         ORDER BY subject ASC
       `, [userId, examDate]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '该考试日期无成绩数据'
@@ -1649,13 +1491,13 @@ app.route('/api/student/score/detail')
       }
       
       // 计算总分和排名
-      const totalScore = result.rows.reduce((sum, item) => sum + Number(item.score), 0);
+      const totalScore = result.reduce((sum, item) => sum + Number(item.score), 0);
       const rankData = await calculateExamTotalRank(userId, examDate, totalScore);
       const rankChange = await getRankChange(userId, examDate, rankData.grade_rank);
       
       // 处理单科数据
       const subjectList = [];
-      for (const item of result.rows) {
+      for (const item of result) {
         const subject = item.subject;
         const score = Number(item.score);
         
@@ -1669,7 +1511,6 @@ app.route('/api/student/score/detail')
         });
       }
       
-      // 获取历史成绩
       const historyScores = await getExamHistoryScores(userId);
       const subjectHistory = await getSubjectHistoryScores(userId);
       
@@ -1696,8 +1537,6 @@ app.route('/api/student/score/detail')
         code: 500,
         message: '查询失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
@@ -1705,7 +1544,6 @@ app.route('/api/student/score/detail')
 app.route('/api/student/change-password')
   .options((req, res) => res.json({ code: 200, message: 'OK' }))
   .post(requireRole('student'), handleException('学生修改密码'), async (req, res) => {
-    let client = null;
     try {
       const data = req.body;
       
@@ -1743,19 +1581,18 @@ app.route('/api/student/change-password')
       }
       
       // 验证原密码
-      client = await pool.connect();
-      const result = await client.query(`
-        SELECT password FROM users WHERE id = $1 LIMIT 1
+      const [result] = await pool.query(`
+        SELECT password FROM users WHERE id = ? LIMIT 1
       `, [userId]);
       
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return res.status(400).json(xssEscape({
           code: 400,
           message: '用户不存在'
         }));
       }
       
-      const user = result.rows[0];
+      const user = result[0];
       if (!verifyPassword(oldPassword, user.password)) {
         logAudit('学生修改密码', userId, req.userInfo.username, req.ip, '原密码错误', 'WARNING');
         return res.status(400).json(xssEscape({
@@ -1766,8 +1603,8 @@ app.route('/api/student/change-password')
       
       // 修改密码
       const hashedNewPwd = hashPassword(newPassword);
-      await client.query(`
-        UPDATE users SET password = $1 WHERE id = $2
+      await pool.query(`
+        UPDATE users SET password = ? WHERE id = ?
       `, [hashedNewPwd, userId]);
       
       logAudit('学生修改密码', userId, req.userInfo.username, req.ip, '密码修改成功');
@@ -1782,13 +1619,10 @@ app.route('/api/student/change-password')
         code: 500,
         message: '修改失败'
       }));
-    } finally {
-      if (client) client.release();
     }
   });
 
 // ===================== 启动服务 =====================
-// 初始化数据库并启动服务
 const startServer = async () => {
   try {
     // 测试数据库连接
@@ -1797,26 +1631,36 @@ const startServer = async () => {
       console.error('❌ 数据库连接失败，服务启动终止');
       process.exit(1);
     }
-    
-    // 初始化数据库
+
+    // 初始化数据库表结构
     await initializeDatabase();
-    
+
     // 启动HTTP服务
     app.listen(PORT, () => {
-      console.log('='.repeat(60));
-      console.log('成绩管理系统正在启动');
-      console.log('成绩管理系统后端服务+EJS页面渲染启动成功！');
-      console.log(`服务环境：${ENV}`);
-      console.log(`服务地址：http://localhost:${PORT}`);
-      console.log(`默认管理员账号：admin001/Admin@123456`);
-      console.log(`默认教师账号：teacher001/123456`);
-      console.log('='.repeat(60));
+      console.log(`✅ 成绩管理系统服务已启动`);
+      console.log(`🔗 访问地址: http://localhost:${PORT}`);
+      console.log(`📌 当前环境: ${ENV}`);
+      console.log(`🕒 启动时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`);
     });
+
+    // 捕获未处理的异常
+    process.on('unhandledRejection', (err) => {
+      console.error('❌ 未处理的Promise异常:', err);
+      logAudit('系统异常', -1, 'system', 'localhost', `未处理Promise异常：${err.message}`, 'ERROR');
+    });
+
+    process.on('uncaughtException', (err) => {
+      console.error('❌ 未捕获的系统异常:', err);
+      logAudit('系统异常', -1, 'system', 'localhost', `未捕获异常：${err.message}`, 'ERROR');
+      process.exit(1);
+    });
+
   } catch (err) {
-    console.error('❌ 服务启动失败：', err.message);
+    console.error('❌ 服务启动失败:', err.message);
+    logAudit('服务启动', -1, 'system', 'localhost', `启动失败：${err.message}`, 'ERROR');
     process.exit(1);
   }
 };
 
-// 启动服务
+// 执行启动函数
 startServer();
