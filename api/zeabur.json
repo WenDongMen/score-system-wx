@@ -1,0 +1,8 @@
+{
+  "build": {
+    "type": "nodejs"
+  },
+  "run": {
+    "command": "npm start"
+  }
+}
