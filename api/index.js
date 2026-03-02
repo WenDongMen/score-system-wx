@@ -12,7 +12,7 @@ const path = require('path');
 
 // 初始化Express应用
 const app = express();
-const PORT = process.env.PORT || 80;
+const PORT = 80;
 const ENV = process.env.ENV || 'production';
 
 // ===================== EJS模板引擎配置 =====================
@@ -1669,3 +1669,4 @@ const startServer = async () => {
 
 // 执行启动函数
 startServer();
+
