@@ -1623,6 +1623,7 @@ app.route('/api/student/change-password')
   });
 
 // ===================== 启动服务 =====================
+// ===================== 启动服务 =====================
 const startServer = async () => {
   try {
     // 测试数据库连接
@@ -1635,10 +1636,10 @@ const startServer = async () => {
     // 初始化数据库表结构
     await initializeDatabase();
 
-    // 启动HTTP服务
-    app.listen(PORT, () => {
+    // 关键修复：监听 0.0.0.0 而非 localhost
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ 成绩管理系统服务已启动`);
-      console.log(`🔗 访问地址: http://localhost:${PORT}`);
+      console.log(`🔗 访问地址: http://0.0.0.0:${PORT}`); // 日志更新为 0.0.0.0
       console.log(`📌 当前环境: ${ENV}`);
       console.log(`🕒 启动时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`);
     });
@@ -1661,6 +1662,3 @@ const startServer = async () => {
     process.exit(1);
   }
 };
-
-// 执行启动函数
-startServer();
